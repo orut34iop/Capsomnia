@@ -29,6 +29,6 @@
 	<key>NSHighResolutionCapable</key>
 	<true/>
 	<key>CapsomniaToolsPackageURL</key>
-	<string>https://github.com/fuji-mak/cpsm/releases/latest/download/Capsomnia-Tools.pkg</string>
+	<string>https://github.com/orut34iop/Capsomnia/releases/latest/download/Capsomnia-Tools.pkg</string>
 </dict>
 </plist>

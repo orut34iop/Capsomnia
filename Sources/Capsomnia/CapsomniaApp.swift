@@ -5,6 +5,14 @@ import Foundation
 
 final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var lastAppliedState: Bool?
+    private var lastConfirmedSleepState: Bool?
+    private var explicitAwakeTarget: Bool?
+    private var failedTogglePhysicalState: Bool?
+    private var lastPublishedAwake: AwakePresentation?
+    private weak var awakeMenuItem: NSMenuItem?
+    private weak var awakeMenuStatus: NSMenuItem?
+    private weak var computerMenuStatus: NSMenuItem?
+    private weak var lidLockMenuItem: NSMenuItem?
     private var failedSleepState: Bool?
     private var nextSleepStateRetryAt = Date.distantPast
     private var nextSleepStateVerificationAt = Date.distantPast
@@ -16,6 +24,27 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private lazy var hotspotKeepAlive = MobileHotspotKeepAlive(log: { [weak self] message in
         self?.log(message)
     })
+    private var lidLockNotice: LidOpenLockNotice?
+    private var lastLidLockAwakeState: Bool?
+    private lazy var lidOpenLockController: LidOpenLockController = {
+        let controller = LidOpenLockController(record: Preferences.lastLidOpenLock,
+                                              requestLock: ScreenLock.request,
+                                              save: { Preferences.lastLidOpenLock = $0 })
+        controller.onChange = { [weak self] event in
+            self?.settingsWindowController?.refreshLidLockRecord()
+            self?.log("lid_open_lock outcome=\(event.outcome.rawValue) opened_at=\(event.openedAt.timeIntervalSince1970) requested_at=\(event.requestedAt?.timeIntervalSince1970 ?? 0) confirmed_at=\(event.confirmedAt?.timeIntervalSince1970 ?? 0)")
+        }
+        controller.onConfirmed = ScreenLock.notify
+        controller.onNotice = { [weak self] event in
+            guard let self else { return }
+            self.lidLockNotice?.window?.orderOut(nil)
+            self.lidLockNotice = LidOpenLockNotice(record: event, onDismiss: { [weak self] in
+                self?.lidOpenLockController.acknowledge(event.id)
+            }, onViewRecord: { [weak self] in self?.showSettingsWindow(page: .advancedSettings) })
+            self.lidLockNotice?.present()
+        }
+        return controller
+    }()
     private var sessionTimer = SessionAutoOffTimer()
     private var controlServer: ControlServer?
     private var isControlMutationInFlight = false
@@ -44,8 +73,6 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var autoOffPresetMenuItems: [NSMenuItem] = []
     private weak var autoOffCustomMenuItem: NSMenuItem?
     private weak var keepDisplayAwakeStatusMenuItem: NSMenuItem?
-    private weak var checkForUpdatesMenuItem: NSMenuItem?
-    private var updateController: UpdateController?
     private lazy var toolsDownloadController: ToolsDownloadController = {
         let controller = ToolsDownloadController()
         controller.onDownloadingChange = { [weak self] downloading in
@@ -96,15 +123,6 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         Preferences.registerDefaults()
         restoreSavedSecureInputCapsLockIfNeeded(reason: "startup")
 
-        let controller = UpdateController(log: { [weak self] message in
-            self?.log(message)
-        })
-        controller.onAvailableVersionChange = { [weak self] in
-            self?.updateStatusMenuControls()
-            self?.settingsWindowController?.updateAvailableVersion(self?.updateController?.availableVersion)
-        }
-        updateController = controller
-
         configureGlobalHotKey()
         let shouldShowInitialSetup = Preferences.consumeForceWelcomeOnNextLaunch()
             || !Preferences.didCompleteInitialSetup
@@ -135,12 +153,6 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
             showSettingsWindow(page: .initialPreferences)
         } else if ProcessInfo.processInfo.arguments.contains("--show-settings") {
             showSettingsWindow(page: .settings)
-        }
-
-        DispatchQueue.main.async { [weak self] in
-            self?.updateController?.cleanUpInstallerIfNeeded()
-            self?.updateController?.autoCheckIfDue()
-            self?.updateController?.startAutoCheckTimer()
         }
     }
 
@@ -386,16 +398,22 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let strings = AppStrings.current()
         let menu = NSMenu()
         menu.delegate = self
+        menu.autoenablesItems = false
         let toggleCapsLockItem = NSMenuItem(
-            title: strings.toggleCapsLock,
+            title: AwakeText.current.title,
             action: #selector(toggleCapsLockFromMenu),
             keyEquivalent: ""
         )
         toggleCapsLockItem.target = self
         menu.addItem(toggleCapsLockItem)
+        awakeMenuItem = toggleCapsLockItem
+        let awakeStatus = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        awakeStatus.isEnabled = false
+        menu.addItem(awakeStatus)
+        awakeMenuStatus = awakeStatus
         menu.addItem(NSMenuItem.separator())
 
-        let autoOffItem = NSMenuItem(title: strings.autoOffTimer, action: nil, keyEquivalent: "")
+        let autoOffItem = NSMenuItem(title: AwakeText.current.autoEnd, action: nil, keyEquivalent: "")
         let autoOffMenu = NSMenu(title: strings.autoOffTimer)
         autoOffMenu.delegate = self
         autoOffPresetMenuItems = []
@@ -403,7 +421,7 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         for minutes in [0] + AutoOffPreset.minuteOptions {
             let presetItem = NSMenuItem(
                 title: minutes == 0
-                    ? strings.autoOffOff
+                    ? AwakeText.current.never
                     : AutoOffFormatter.durationLabel(minutes: minutes),
                 action: #selector(selectAutoOffPreset),
                 keyEquivalent: ""
@@ -435,21 +453,20 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         keepDisplayAwakeItem.target = self
         menu.addItem(keepDisplayAwakeItem)
         keepDisplayAwakeStatusMenuItem = keepDisplayAwakeItem
+        let computerStatus = NSMenuItem(title: "", action: nil, keyEquivalent: "")
+        computerStatus.isEnabled = false
+        menu.addItem(computerStatus)
+        computerMenuStatus = computerStatus
+        let lockItem = NSMenuItem(title: AwakeText.current.lockTitle, action: #selector(toggleLidLockFromMenu), keyEquivalent: "")
+        lockItem.target = self
+        menu.addItem(lockItem)
+        lidLockMenuItem = lockItem
 
         menu.addItem(NSMenuItem.separator())
 
         let openItem = NSMenuItem(title: strings.openCapsomnia, action: #selector(openCapsomnia), keyEquivalent: "o")
         openItem.target = self
         menu.addItem(openItem)
-
-        let updatesItem = NSMenuItem(
-            title: strings.checkForUpdates,
-            action: #selector(checkForUpdatesFromMenu),
-            keyEquivalent: ""
-        )
-        updatesItem.target = self
-        menu.addItem(updatesItem)
-        checkForUpdatesMenuItem = updatesItem
 
         menu.addItem(NSMenuItem.separator())
 
@@ -463,15 +480,6 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     func menuWillOpen(_ menu: NSMenu) {
         updateStatusMenuControls()
-        updateController?.autoCheckIfDue()
-    }
-
-    @objc private func checkForUpdatesFromMenu() {
-        if let availableVersion = updateController?.availableVersion {
-            updateController?.promptDownload(version: availableVersion)
-        } else {
-            updateController?.checkNow()
-        }
     }
 
     @objc private func toggleCapsLockFromMenu() {
@@ -484,17 +492,33 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func requestCapsLockToggle(source: String) {
-        guard !isExplicitCapsLockToggleInFlight else { return }
-        let target = !currentCapsLockState
+        requestAwakeState(!currentCapsLockState, source: source)
+    }
+
+    private func requestAwakeState(_ target: Bool, source: String) {
+        guard !isExplicitCapsLockToggleInFlight, !isControlMutationInFlight, !isAutoOffToggleInFlight else { return }
         isExplicitCapsLockToggleInFlight = true
+        explicitAwakeTarget = target
+        failedTogglePhysicalState = nil
+        nextSleepStateRetryAt = .distantPast
+        nextSleepStateVerificationAt = .distantPast
+        publishAwakePresentation()
+        settingsWindowController?.window?.displayIfNeeded()
         prepareSecureInputOverrideForExplicitTarget(target)
         suppressInputSourceRecoveryForUserAction(reason: source)
         log("\(source)_toggle_capslock requested target=\(target ? "on" : "off")")
-        capsLockToggleCoordinator.requestSet(target) { [weak self] result in
+        // As with the menu action, finish AppKit mouse handling before changing
+        // the HID modifier state. Pending UI is already visible above.
+        RunLoop.main.perform(inModes: [.default]) { [weak self] in
             guard let self else { return }
-            self.isExplicitCapsLockToggleInFlight = false
-            self.handleCapsLockToggleResult(result, source: source)
-            self.applyCurrentCapsLockState(reason: source)
+            self.capsLockToggleCoordinator.requestSet(target) { [weak self] result in
+                guard let self else { return }
+                self.isExplicitCapsLockToggleInFlight = false
+                self.handleCapsLockToggleResult(result, source: source)
+                self.applyCurrentCapsLockState(reason: source)
+                self.explicitAwakeTarget = nil
+                self.publishAwakePresentation()
+            }
         }
     }
 
@@ -504,13 +528,17 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     ) {
         switch result {
         case let .changed(target):
+            failedTogglePhysicalState = nil
             cancelInputSourceRecovery()
             log("\(source)_toggle_capslock target=\(target ? "on" : "off") succeeded=true")
         case .unavailable:
+            failedTogglePhysicalState = currentCapsLockState
             log("\(source)_toggle_capslock failed=hid_system_unavailable")
         case let .writeFailed(target):
+            failedTogglePhysicalState = currentCapsLockState
             log("\(source)_toggle_capslock target=\(target ? "on" : "off") failed=write_state")
         case let .verificationFailed(target, actual):
+            failedTogglePhysicalState = currentCapsLockState
             let actualValue = actual.map { $0 ? "on" : "off" } ?? "unknown"
             log(
                 "\(source)_toggle_capslock target=\(target ? "on" : "off")"
@@ -529,7 +557,20 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func openAutoOffSettings() {
-        showSettingsWindow(page: currentSettingsPage())
+        showSettingsWindow(page: .settings)
+        settingsWindowController?.showAutoOffSettings()
+    }
+
+    @objc private func toggleLidLockFromMenu() {
+        setLidLockEnabled(!Preferences.lockOnLidOpen)
+    }
+
+    private func setLidLockEnabled(_ enabled: Bool) {
+        Preferences.lockOnLidOpen = enabled
+        if enabled { ScreenLock.requestNotificationPermission() }
+        settingsWindowController?.reloadText()
+        publishAwakePresentation()
+        log("preference lock_on_lid_open=\(enabled ? "on" : "off")")
     }
 
     @objc private func toggleKeepDisplayAwakeFromMenu() {
@@ -596,27 +637,24 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
                 onKeyboardShortcutRecordingChange: { [weak self] isRecording in
                     self?.setKeyboardShortcutRecording(isRecording)
                 },
-                onAutomaticUpdateChecksChange: { [weak self] enabled in
-                    self?.setAutomaticUpdateChecks(enabled)
-                },
                 onFinishInitialSetup: { [weak self] in
                     Preferences.didCompleteInitialSetup = true
                     self?.log("initial_setup_complete")
                 },
-                onUpdate: { [weak self] version in
-                    self?.updateController?.promptDownload(version: version)
-                },
-                onReleaseNotes: { [weak self] version in
-                    self?.updateController?.openReleaseNotes(version: version)
-                },
                 onToolsDownload: { [weak self] in
                     self?.toolsDownloadController.promptDownload(from: self?.settingsWindowController?.window)
                 },
-                autoOffDescriptionProvider: { [weak self] in self?.sessionTimerDescription() }
+                autoOffDescriptionProvider: { [weak self] in self?.sessionTimerDescription() },
+                onLidOpenLockChange: { [weak self] enabled in
+                    self?.setLidLockEnabled(enabled)
+                },
+                lidLockRecordProvider: { [weak self] in self?.lidOpenLockController.record },
+                awakeModeProvider: { [weak self] in self?.lastConfirmedSleepState == true && self?.failedSleepState == nil },
+                onAwakeChange: { [weak self] target in self?.requestAwakeState(target, source: "settings") },
+                awakePresentationProvider: { [weak self] in self?.awakePresentation ?? AwakePresentation(phase: .unknown) }
             )
         }
 
-        settingsWindowController?.updateAvailableVersion(updateController?.availableVersion)
         settingsWindowController?.updateToolsDownloading(toolsDownloadController.isDownloading)
         settingsWindowController?.show(page: page)
     }
@@ -674,11 +712,6 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         log("preference launch_at_login=\(enabled ? "on" : "off")")
     }
 
-    private func setAutomaticUpdateChecks(_ enabled: Bool) {
-        Preferences.automaticUpdateChecks = enabled
-        log("preference automatic_update_checks=\(enabled ? "on" : "off")")
-    }
-
     private func setKeepDisplayAwake(_ enabled: Bool) {
         Preferences.keepDisplayAwake = enabled
         let capsLockOn = currentCapsLockState
@@ -696,6 +729,7 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         updateStatusMenuControls()
         settingsWindowController?.reloadText()
+        publishAwakePresentation()
         log("preference keep_display_awake=\(enabled ? "on" : "off")")
     }
 
@@ -761,6 +795,7 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func fireAutoOff(reason: String) {
         guard !isAutoOffToggleInFlight else { return }
         isAutoOffToggleInFlight = true
+        publishAwakePresentation()
         prepareSecureInputOverrideForExplicitTarget(false)
         // Prevent input-source-change recovery from re-asserting Caps Lock and
         // undoing the auto-off while the off is being applied.
@@ -825,7 +860,7 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let selectedMinutes = Preferences.autoOffMinutes
 
         autoOffStatusMenuItem?.title = AutoOffMenuFormatter.title(
-            base: strings.autoOffTimer,
+            base: AwakeText.current.autoEnd,
             turnsOffIn: strings.autoOffTurnsOffIn,
             state: autoOffDisplayState()
         )
@@ -839,10 +874,9 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         ) + "…"
         autoOffCustomMenuItem?.state = selectedMinutes > 0
             && !AutoOffPreset.isQuickPick(selectedMinutes) ? .on : .off
-        keepDisplayAwakeStatusMenuItem?.state = Preferences.keepDisplayAwake ? .on : .off
-        checkForUpdatesMenuItem?.title = updateController?.availableVersion.map {
-            String(format: strings.updateAvailableMenuFormat, $0)
-        } ?? strings.checkForUpdates
+        awakePresentation.updateMenu(master: awakeMenuItem, status: awakeMenuStatus,
+                                     computer: keepDisplayAwakeStatusMenuItem, computerStatus: computerMenuStatus,
+                                     lidLock: lidLockMenuItem, text: .current)
     }
 
     private func configureGlobalHotKey() {
@@ -894,10 +928,23 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         log("shortcut_register resume_failed status=\(status)")
     }
 
+    private func pollLidOpenLock() {
+        let awake = currentCapsLockState && lastAppliedState == true && failedSleepState == nil
+        if lastLidLockAwakeState != awake {
+            lastLidLockAwakeState = awake
+            settingsWindowController?.refreshLidLockRecord()
+        }
+        let eligible = Preferences.lockOnLidOpen && Preferences.keepDisplayAwake && awake
+        lidOpenLockController.poll(closed: ClamshellStateReader.isClosed(), eligible: eligible,
+                                   locked: ScreenLock.isLocked(), now: Date())
+    }
+
     private func installPollingMonitor() {
         pollingTimer?.invalidate()
         let timer = Timer(timeInterval: 0.25, repeats: true) { [weak self] _ in
+            self?.pollLidOpenLock()
             self?.applyCurrentCapsLockState(reason: "poll")
+            self?.publishAwakePresentation()
         }
         timer.tolerance = 0.05
         pollingTimer = timer
@@ -1355,6 +1402,7 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func markSleepStateConfirmed(_ capsLockOn: Bool, at now: Date, reason: String) {
+        lastConfirmedSleepState = capsLockOn
         hasLoggedMissingSleepState = false
         failedSleepState = nil
         nextSleepStateRetryAt = .distantPast
@@ -1453,11 +1501,37 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    private var awakePresentation: AwakePresentation {
+        let physical = capsLockStateReader.currentState()
+        let requested = secureInputCapsLockOverrideActive ? true : physical
+        let pending = explicitAwakeTarget ?? (isAutoOffToggleInFlight ? false : nil)
+        let toggleFailed = failedTogglePhysicalState != nil && failedTogglePhysicalState == requested
+        return AwakePresentation(
+            phase: AwakePhase.resolve(requested: requested, confirmed: lastConfirmedSleepState,
+                                      pending: pending, failed: failedSleepState != nil || toggleFailed),
+            confirmedOn: lastConfirmedSleepState == true,
+            computerUse: Preferences.keepDisplayAwake,
+            displayActive: displayAwakeAssertion.isActive,
+            lockOnOpen: Preferences.lockOnLidOpen,
+            inputPermissionIssue: dedicatedModeError)
+    }
+
+    private func publishAwakePresentation() {
+        if let failed = failedTogglePhysicalState, let actual = capsLockStateReader.currentState(), actual != failed {
+            failedTogglePhysicalState = nil
+        }
+        let state = awakePresentation
+        guard lastPublishedAwake != state else { return }
+        lastPublishedAwake = state
+        statusItem?.button?.image = DotImage.make(color: state.color)
+        statusItem?.button?.toolTip = AwakeText.current.title + ": " + state.status(.current)
+        updateStatusMenuControls()
+        settingsWindowController?.refreshAwakePresentation()
+    }
+
     private func updateStatus(capsLockOn: Bool) {
-        guard let button = statusItem?.button else { return }
-        let strings = AppStrings.current()
-        button.image = capsLockOn ? onImage : offImage
-        button.toolTip = capsLockOn ? strings.tooltipOn : strings.tooltipOff
+        lastPublishedAwake = nil
+        publishAwakePresentation()
     }
 
     private func refreshStatus(capsLockOn: Bool) {
@@ -1469,6 +1543,7 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func updateStatusError() {
+        settingsWindowController?.refreshAwakePresentation()
         if statusItem == nil {
             installStatusItem()
         }
@@ -1564,7 +1639,7 @@ extension Capsomnia {
             if args.count == 3, let value = settings[args[2]] { succeed(.object([args[2]: value])); return }
             fail("Unknown setting. Run cpsm settings get."); return
         }
-        guard !isControlMutationInFlight && !isAutoOffToggleInFlight && !autoOffSleepCoordinator.isPending else {
+        guard !isControlMutationInFlight && !isExplicitCapsLockToggleInFlight && !isAutoOffToggleInFlight && !autoOffSleepCoordinator.isPending else {
             fail("A power operation is already in progress. Check status before trying again."); return
         }
         if args == ["on"] || args == ["off"] || args == ["toggle"] {
@@ -1620,6 +1695,9 @@ extension Capsomnia {
         }
         prepareSecureInputOverrideForExplicitTarget(target)
         isControlMutationInFlight = true
+        explicitAwakeTarget = target
+        failedTogglePhysicalState = nil
+        publishAwakePresentation()
         suppressInputSourceRecoveryForUserAction(reason: "cli")
         ExplicitAwakeCommand.run(
             target: target,
@@ -1644,6 +1722,9 @@ extension Capsomnia {
             sleep: { SystemSleepRequester.request() },
             completion: { result in
                 self.isControlMutationInFlight = false
+                self.explicitAwakeTarget = nil
+                if case .failure = result { self.failedTogglePhysicalState = self.currentCapsLockState }
+                self.publishAwakePresentation()
                 self.updateStatusMenuControls()
                 self.settingsWindowController?.reloadText()
                 switch result {
@@ -1718,7 +1799,6 @@ extension Capsomnia {
             "keep-hotspot-alive": .bool(Preferences.keepHotspotAlive),
             "ignore-external-caps-lock-off-while-lid-closed": .bool(Preferences.ignoreExternalCapsLockOffWhileLidClosed),
             "auto-off-minutes": .number(Double(Preferences.autoOffMinutes)),
-            "automatic-update-checks": .bool(Preferences.automaticUpdateChecks),
             "shortcut": Preferences.keyboardShortcut.map { .string($0.displayValue) } ?? .null
         ]
     }
@@ -1755,7 +1835,6 @@ extension Capsomnia {
         case "keep-display-awake": setKeepDisplayAwake(enabled)
         case "keep-hotspot-alive": setKeepHotspotAlive(enabled)
         case "ignore-external-caps-lock-off-while-lid-closed": setIgnoreExternalCapsLockOffWhileLidClosed(enabled)
-        case "automatic-update-checks": setAutomaticUpdateChecks(enabled)
         default: throw ExplicitAwakeCommand.Failure("Unknown setting. Run cpsm settings get.")
         }
     }

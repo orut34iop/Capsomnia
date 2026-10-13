@@ -52,7 +52,7 @@ final class SettingsWindowControllerTests: XCTestCase {
                 $0.accessibilityLabel() == strings.advancedSettings
             }
         )
-        let advancedSettingsButton = try XCTUnwrap(visibleButtons.first)
+        let advancedSettingsButton = try XCTUnwrap(visibleButtons.first { $0.accessibilityLabel() == strings.advancedSettings })
         XCTAssertTrue(advancedSettingsButton.accessibilityPerformPress())
         XCTAssertEqual(controller.window?.title, strings.advancedSettings)
     }
@@ -236,6 +236,7 @@ final class SettingsWindowControllerTests: XCTestCase {
         defer { controller.close() }
 
         controller.show(page: .settings)
+        controller.showAutoOffSettings()
         let contentView = try XCTUnwrap(controller.window?.contentView)
         contentView.layoutSubtreeIfNeeded()
 
@@ -245,7 +246,7 @@ final class SettingsWindowControllerTests: XCTestCase {
         )
         let displaySettingTitle = try XCTUnwrap(
             visibleDescendants(of: contentView).first {
-                $0.stringValue == strings.keepDisplayAwake
+                $0.stringValue == AwakeText.current.autoEnd
             } as NSTextField?
         )
         let originalContentSize = contentView.bounds.size
@@ -268,7 +269,7 @@ final class SettingsWindowControllerTests: XCTestCase {
         let renderedText = Set(labels.map(\.stringValue))
 
         // Custom controls live in a separate popover, so the main window does not move.
-        XCTAssertTrue(renderedText.contains(strings.autoOffOff))
+        XCTAssertTrue(renderedText.contains(AwakeText.current.never))
         XCTAssertTrue(renderedText.contains(strings.autoOffCustom))
         XCTAssertFalse(renderedText.contains(strings.autoOffHours))
         XCTAssertFalse(renderedText.contains(strings.autoOffMinutesUnit))
@@ -305,6 +306,7 @@ final class SettingsWindowControllerTests: XCTestCase {
         defer { controller.close() }
 
         controller.show(page: .settings)
+        controller.showAutoOffSettings()
         let contentView = try XCTUnwrap(controller.window?.contentView)
         contentView.layoutSubtreeIfNeeded()
         let selectedPreset = try XCTUnwrap(
@@ -336,6 +338,7 @@ final class SettingsWindowControllerTests: XCTestCase {
         defer { controller.close() }
 
         controller.show(page: .settings)
+        controller.showAutoOffSettings()
         let contentView = try XCTUnwrap(controller.window?.contentView)
         contentView.layoutSubtreeIfNeeded()
         let customChip = try XCTUnwrap(
@@ -409,7 +412,7 @@ final class SettingsWindowControllerTests: XCTestCase {
         Preferences.autoOffMinutes = 45
         let onController = makeController()
         defer { onController.close() }
-        onController.show(page: .settings)
+        onController.show(page: .timerSettings)
         let onContent = try XCTUnwrap(onController.window?.contentView)
         onContent.layoutSubtreeIfNeeded()
         let shown = try XCTUnwrap(view(in: onContent, accessibilityLabel: restartLabel))
@@ -419,7 +422,7 @@ final class SettingsWindowControllerTests: XCTestCase {
         Preferences.autoOffMinutes = 0
         let offController = makeController()
         defer { offController.close() }
-        offController.show(page: .settings)
+        offController.show(page: .timerSettings)
         let offContent = try XCTUnwrap(offController.window?.contentView)
         offContent.layoutSubtreeIfNeeded()
         let hidden = try XCTUnwrap(view(in: offContent, accessibilityLabel: restartLabel))
@@ -429,37 +432,6 @@ final class SettingsWindowControllerTests: XCTestCase {
     private func view(in view: NSView, accessibilityLabel: String) -> NSView? {
         let all: [NSView] = descendants(of: view)
         return all.first { $0.accessibilityLabel() == accessibilityLabel }
-    }
-
-    func testAdvancedSettingsShowsAutomaticUpdateChecksToggle() throws {
-        let previousLanguage = Preferences.language
-        Preferences.language = .english
-        defer { Preferences.language = previousLanguage }
-        let strings = AppStrings.localized(for: .english)
-
-        _ = NSApplication.shared
-        var toggledValues: [Bool] = []
-        let controller = makeController(
-            onAutomaticUpdateChecksChange: { toggledValues.append($0) }
-        )
-        defer { controller.close() }
-
-        controller.show(page: .advancedSettings)
-        let contentView = try XCTUnwrap(controller.window?.contentView)
-        contentView.layoutSubtreeIfNeeded()
-
-        let renderedText = Set(
-            (visibleDescendants(of: contentView) as [NSTextField]).map(\.stringValue)
-        )
-        XCTAssertTrue(renderedText.contains(strings.automaticUpdateChecks))
-        XCTAssertTrue(renderedText.contains(strings.automaticUpdateChecksDesc))
-
-        let toggle = try XCTUnwrap(
-            view(in: contentView, accessibilityLabel: strings.automaticUpdateChecks)
-        )
-        XCTAssertTrue(toggle.accessibilityPerformPress())
-
-        XCTAssertEqual(toggledValues.count, 1)
     }
 
     func testCLIEntryAndOneShotTimerWithSavedTimerOff() throws {
@@ -482,6 +454,7 @@ final class SettingsWindowControllerTests: XCTestCase {
         let content = try XCTUnwrap(controller.window?.contentView)
         content.layoutSubtreeIfNeeded()
         XCTAssertNil(view(in: content, accessibilityLabel: ToolsDownloadText.current.entryTitle))
+        controller.showAutoOffSettings()
         let restart = try XCTUnwrap(view(in: content, accessibilityLabel: AppStrings.current().autoOffRestart))
         XCTAssertFalse(restart.isHidden)
         controller.show(page: .advancedSettings)
@@ -496,52 +469,27 @@ final class SettingsWindowControllerTests: XCTestCase {
         XCTAssertTrue(link.isEnabled)
         let frame = link.convert(link.bounds, to: content)
         XCTAssertTrue(content.bounds.contains(frame))
-        // The update card grows when an update is found while Settings is open.
-        // Both actions must stay visible and distinct, in every supported locale.
         for language in AppLanguage.allCases {
             Preferences.language = language
             controller.reloadText()
-            for availableVersion in [nil, "4.1.0", nil] as [String?] {
-                controller.updateAvailableVersion(availableVersion)
-                controller.show(page: .advancedSettings)
-                content.layoutSubtreeIfNeeded()
-                let toolsFrame = link.convert(link.bounds, to: content)
-                XCTAssertTrue(content.bounds.contains(toolsFrame))
-                guard availableVersion != nil else { continue }
-                let update = try XCTUnwrap(
-                    visibleDescendants(of: content).first { (button: LEDButton) in
-                        button.title == AppStrings.current().updateAction
-                    }
-                )
-                let updateFrame = update.convert(update.bounds, to: content)
-                XCTAssertTrue(content.bounds.contains(updateFrame))
-                let version = try XCTUnwrap(
-                    visibleDescendants(of: content).first { (label: NSTextField) in
-                        label.stringValue == String(format: AppStrings.current().updateAvailableVersionFormat, "4.1.0")
-                    }
-                )
-                let versionFrame = version.convert(version.bounds, to: content)
-                XCTAssertTrue(content.bounds.contains(versionFrame))
-                XCTAssertFalse(versionFrame.intersects(updateFrame))
-                XCTAssertGreaterThanOrEqual(version.bounds.width + 1, version.intrinsicContentSize.width)
-                XCTAssertFalse(toolsFrame.intersects(updateFrame))
-                let title = try XCTUnwrap(
-                    visibleDescendants(of: link).first { (label: NSTextField) in
-                        label.stringValue == ToolsDownloadText.current.entryTitle
-                    }
-                )
-                XCTAssertGreaterThanOrEqual(title.bounds.width + 1, title.intrinsicContentSize.width)
-            }
+            controller.show(page: .advancedSettings)
+            content.layoutSubtreeIfNeeded()
+            let toolsFrame = link.convert(link.bounds, to: content)
+            XCTAssertTrue(content.bounds.contains(toolsFrame))
+            let title = try XCTUnwrap(
+                visibleDescendants(of: link).first { (label: NSTextField) in
+                    label.stringValue == ToolsDownloadText.current.entryTitle
+                }
+            )
+            XCTAssertGreaterThanOrEqual(title.bounds.width + 1, title.intrinsicContentSize.width)
         }
         Preferences.language = .japanese
         controller.reloadText()
         if let path = ProcessInfo.processInfo.environment["CAPSOMNIA_UI_CAPTURE_DIR"] {
-            for (page, name, version) in [
-                (SettingsPage.settings, "settings", nil),
-                (.advancedSettings, "advanced", "4.1.0"),
-                (.advancedSettings, "advanced-no-update", nil)
-            ] as [(SettingsPage, String, String?)] {
-                controller.updateAvailableVersion(version)
+            for (page, name) in [
+                (SettingsPage.settings, "settings"),
+                (.advancedSettings, "advanced")
+            ] as [(SettingsPage, String)] {
                 controller.show(page: page)
                 content.layoutSubtreeIfNeeded()
                 let bitmap = try XCTUnwrap(content.bitmapImageRepForCachingDisplay(in: content.bounds))
@@ -560,7 +508,6 @@ final class SettingsWindowControllerTests: XCTestCase {
         capsLockIndicatorStateProvider: @escaping () -> CapsLockIndicatorDisplayState = {
             CapsLockIndicatorDisplayState(hidden: false, restartPending: false)
         },
-        onAutomaticUpdateChecksChange: @escaping (Bool) -> Void = { _ in },
         onToolsDownload: @escaping () -> Void = {}
     ) -> SettingsWindowController {
         SettingsWindowController(
@@ -578,9 +525,7 @@ final class SettingsWindowControllerTests: XCTestCase {
             autoOffDisplayProvider: autoOffDisplayProvider,
             onKeyboardShortcutChange: { _ in true },
             onKeyboardShortcutRecordingChange: onKeyboardShortcutRecordingChange,
-            onAutomaticUpdateChecksChange: onAutomaticUpdateChecksChange,
             onFinishInitialSetup: {},
-            currentVersion: "4.0.0",
             onToolsDownload: onToolsDownload
         )
     }

@@ -1,0 +1,42 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Capsomnia · 保持运行状态与主开关草图</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#17191b;color:#f1f3eb;font:15px/1.65 -apple-system,BlinkMacSystemFont,sans-serif;padding:36px}main{max-width:1260px;margin:auto}h1{font-size:26px;margin:0 0 6px}p{color:#b5bbad} .views{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;margin:26px 0}article{background:#000;border:1px solid #41443f;border-radius:22px;padding:24px}.caption{color:#a9ad9f;font-size:13px;margin:0 0 25px}.orb{height:40px;width:40px;border-radius:50%;margin:0 auto 16px;background:var(--tone)}.on .orb{box-shadow:0 0 22px #b8ff1f80}.brand{text-align:center;font-size:25px;font-weight:700;margin-bottom:20px}.state{border:1px dashed #b8ff1f80;border-radius:14px;padding:18px;height:210px}.row{display:flex;justify-content:space-between;align-items:center;gap:12px;font-weight:600}.switch{flex-shrink:0;width:44px;height:27px;border-radius:20px;background:#5b5e58;padding:3px}.switch i{display:block;background:white;width:21px;height:21px;border-radius:50%}.on .switch{background:#b8ff1f}.on .switch i{margin-left:17px}.pending .switch{opacity:.45}.status{font-size:19px;font-weight:600;color:var(--tone);margin:18px 0 2px}.detail{font-size:13px;margin:0;line-height:1.5;min-height:40px}.timer{padding:18px;margin-top:20px;border:1px solid #292d25;border-radius:14px}.timer label{display:block;font-size:13px;color:#a9ad9f}.options{display:flex;gap:6px;flex-wrap:wrap;margin-top:15px}.options span{font-size:12px;padding:6px 8px;border:1px solid #3a3f31;border-radius:8px}.options .selected{background:#b8ff1f;color:black}.menu{margin-top:18px;font-size:13px;color:#a9ad9f}.menu b{color:#f1f3eb}.note{border-left:3px solid #b8ff1f;padding:8px 16px;color:#d2d8c8}.off{--tone:#969991}.on{--tone:#b8ff1f}.pending{--tone:#dfb963}details{margin-top:32px;background:#222620;padding:20px;border-radius:14px}a{color:#b8ff1f}li{margin:9px 0}code{color:#d5dcca}@media(max-width:950px){.views{grid-template-columns:1fr}body{padding:20px}article{max-width:420px;width:100%;margin:auto}}
+</style><main><h1>让状态、开关与菜单说同一件事</h1><p>设计草图 · 2026-10-13 · 待确认，尚未修改应用。虚线框标出本次核心调整区域。</p>
+<div class="views">
+<article class="off"><div class="caption">01 / 保持运行已关闭</div><div class="orb"></div><div class="brand">Capsomnia</div><div class="state"><div class="row">保持 Mac 运行 <span class="switch" role="img" aria-label="主开关关闭"><i></i></span></div><div class="status">已关闭</div><p class="detail">未启用保持运行，合盖后按系统设置休眠或锁定。</p></div><div class="timer"><label>自动结束保持运行</label><div class="options"><span class="selected">不自动关闭</span><span>15m</span><span>30m</span><span>1h</span></div></div><div class="menu">菜单：<b>保持 Mac 运行</b>　未勾选</div></article>
+<article class="pending"><div class="caption">02 / 点击后立即反馈</div><div class="orb"></div><div class="brand">Capsomnia</div><div class="state"><div class="row">保持 Mac 运行 <span class="switch" role="img" aria-label="正在开启，暂不可点击"><i></i></span></div><div class="status">正在开启…</div><p class="detail">正在应用系统设置，请稍候。</p></div><div class="timer"><label>自动结束保持运行</label><div class="options"><span class="selected">不自动关闭</span><span>15m</span><span>30m</span><span>1h</span></div></div><div class="menu">菜单：<b>保持 Mac 运行 · 正在开启…</b>（暂不可点击）</div></article>
+<article class="on"><div class="caption">03 / 已开启，且 Computer Use 模式已开启</div><div class="orb"></div><div class="brand">Capsomnia</div><div class="state"><div class="row">保持 Mac 运行 <span class="switch" role="img" aria-label="主开关开启"><i></i></span></div><div class="status">已开启 · 合盖继续运行</div><p class="detail">防止系统休眠；合盖时保持桌面会话可用，支持 Computer Use 等屏幕自动化。</p></div><div class="timer"><label>自动结束保持运行</label><div class="options"><span class="selected">不自动关闭</span><span>15m</span><span>30m</span><span>1h</span></div></div><div class="menu">菜单：<b>✓ 保持 Mac 运行</b></div></article>
+</div><p class="note">窗口大圆点和菜单栏小圆点同步。颜色之外始终有文字。关闭过程显示“正在关闭…”。失败时在同一区域显示红色状态和失败原因，不能误报成功。下方 Computer Use 与开盖锁定选项保留。</p>
+<p class="note">若 Computer Use 模式未开启，绿色状态下的说明改为：“防止系统休眠，合盖后后台任务继续运行。Computer Use 模式未开启。”<br>“开盖后自动锁定”的独立开关及提示继续保留，明确开盖后的行为。</p>
+<section class="note"><b>两个入口使用完全相同的名称</b><ul>
+<li><b>保持 Mac 运行</b>：主开关；防止系统休眠，合盖后后台任务继续运行。</li>
+<li><b>保持桌面可用（Computer Use）</b>：在主开关生效的基础上，保持桌面会话可用，支持屏幕自动化。替换原“使用 Computer Use 等工具”。已勾选但主开关关闭时，两个入口均标注“待开启主开关”。</li>
+<li><b>开盖后自动锁定</b>：沿用此前设置，在主开关和桌面可用模式均生效时，开盖触发系统锁定。</li>
+</ul>菜单用勾选状态，窗口用开关状态；名称、状态来源和说明一致。</section>
+<p class="note">电源说明建议：“电池供电时会增加耗电，长时间合盖运行建议连接电源。”当前代码没有仅限外接电源的条件，不写“必须连接电源”。本机合盖后拔电的实际行为尚未验证。</p>
+<details><summary>评审记录、依据与验收条件</summary>
+<h2>UI-001 · 保持运行状态与主操作</h2>
+<p>Round 1；mandatory_manual；结果 pending；未冻结；产品代码只读；无 commit/push。用户提供两张启用/停用截图并指出窗口状态无法辨识。本项覆盖同一防休眠状态的窗口、菜单和定时文案，无独立功能集群，不使用子代理。当前 main 存在此前任务的未提交修改，必须保留。未发现适用的仓库 AGENTS.md 或权威任务系统；用户提供的全局签名规则仍适用。</p>
+<h3>证据</h3><ul>
+<li>IMG-01：codex-clipboard-b195e918-e9a9-4ff8-954b-acfb389a1014.png，用户本轮附件；菜单栏绿色，窗口大圆点绿色。IMG-02：codex-clipboard-bada5213-95a6-4ab3-b133-0dce5f735e52.png，同轮附件；菜单栏灰色，窗口大圆点仍绿色。拍摄时刻、DPR未知；视图原生 AppKit。范围为窗口顶部到定时器首项，菜单为联动入口。原图含桌面背景，不复制进仓库。</li>
+<li>当前代码：SettingsWindowController.swift:408 固定 BrandIcon.make(diameter:60)；CapsomniaApp.swift:393 静态切换菜单；SettingsWindowController.swift:307 使用 autoOffOff；AppConstants.swift:321 中文为“关闭”。主窗口没有防休眠总开关，只有可选行为设置。</li>
+<li>事实：CapsLock 状态、最后成功应用的防休眠状态、切换任务、错误状态已经分别存在。推断：UI 未统一消费这些状态导致错觉；并非需要重写防休眠机制。</li>
+<li>专业平台：<a href="https://developer.apple.com/design/human-interface-guidelines/toggles">Apple HIG Toggles</a>：开关应通过外观区分相反状态；<a href="https://developer.apple.com/documentation/SwiftUI/Toggle">Apple Toggle</a> 使用状态绑定。访问日期 2026-10-13；本项目原生 AppKit，借鉴状态表达，不能直接移植 SwiftUI 组件。</li>
+<li>开源平台 GitHub，搜索“newmarcel KeepingYouAwake activate deactivate menu icon”。<a href="https://github.com/newmarcel/KeepingYouAwake">KeepingYouAwake</a>，MIT，访问 master 源码日期 2026-10-13（未固定提交，作为设计证据）；<a href="https://github.com/newmarcel/KeepingYouAwake/blob/master/KeepingYouAwake/KYAAppController/KYAAppController.m">KYAAppController.m</a> 的 sleepWakeTimer 回调更新 active/inactive 图标。借鉴同一生命周期驱动状态，不复制代码；它的防休眠机制不等同于本项目的 pmset/Caps Lock，不替换现有实现。</li>
+</ul><h3>推荐行为与边界</h3><ul>
+<li>保留现有深色、绿色视觉，顶部固定高度的状态区提供命名稳定的“保持 Mac 运行”开关。缩减装饰性留白控制窗口高度；所有状态使用同一槽位，不因消息变化移动其他控件。草图省略下方原有卡片，不代表移除。</li>
+<li>同一状态模型用于主窗口和菜单栏；所有入口（菜单、键盘、CLI、定时器）变化均刷新窗口。窗口主开关沿用既有 CapsLock 切换和防休眠逻辑，避免产生相互竞争的开关。</li>
+<li>点击后立即呈现 pending 且禁重复提交；实际系统设置成功后才呈现 on/off。关闭失败不能显示“已关闭”。读状态失败不能默认 off。辅助输入权限故障与防休眠失败要区分，保留上次已确认状态及具体原因。</li>
+<li>主开关是运行状态，不新增会在启动时自动启用的持久化偏好。保持现有 CapsLock、自动关闭及开盖锁定语义；所有可选开关偏好保留。未启用的子功能在固定说明区标明暂未生效。</li>
+<li>原生开关提供无障碍名称、值、禁用状态，支持 Tab、Space；更新状态不抢焦点。不用闪烁动画，不仅靠颜色区分状态。</li>
+<li>菜单“切换 Caps Lock”改为与窗口同名的“保持 Mac 运行”，以勾选表示状态；定时器零时长文案“不自动关闭”，中文宽度需重新布局而非裁切。保留其他时长。</li>
+<li>边界：本次仅改状态显示与入口；不变更250ms开盖检测、不恢复更新器、不继续已停止的安全审查、不增加网络访问、不把参考应用代码引入项目。</li>
+</ul><h3>验收</h3><p>状态模型覆盖 off/on/开启中/关闭中/失败/未知和迟到回调；菜单、窗口、开盖锁定生效提示同步；不在验证成功前显示完成。原生界面截图检查中英日韩及常见显示尺寸无裁切、无反馈引起的跳动；保留键盘操作与辅助功能语义。运行现有测试及针对状态模型的测试。交付构建前检查签名身份，按用户规则使用有效 Apple 证书，验证安装后签名和运行健康；真实合盖锁定不属于此次自动测试范围。</p>
+<p>建议理由：明确当前状态和下一步动作，保留物理 CapsLock 入口及定时选项。仅改灯颜色不足以解决色觉差异和一秒等待；仅更改说明文字也缺少窗口操作入口。因此采用颜色＋文字＋主开关。剩余：修订版文案待用户确认；实施批次尚未冻结。</p>
+<h3>文案修订 · 2026-10-13 · revision_requested → pending</h3>
+<p>用户指出“防止系统休眠”不足以涵盖合盖继续运行、避免合盖导致桌面会话不可用及 Computer Use 的用途。原推荐“防止系统休眠”保留在本修订记录作为历史；新版主开关采用“保持 Mac 运行”。开启说明随 Computer Use 偏好与实际应用结果变化：仅后台保持运行时不得声称保持桌面会话可用；Computer Use 设置开启但实际 display assertion 失败时，不得呈现该能力已生效。设置已选中不等于运行状态已确认。</p>
+<p>不使用“确保 Computer Use 正常运行”或“永不锁屏”：用户主动锁定、开盖自动锁定及其他系统事件仍可能中断桌面自动化。合盖时降低内置屏幕亮度与保持桌面会话可用可以同时成立。本次只修改草图文案；产品代码未修改，继续等待本项确认。</p>
+<h3>入口命名与电源说明修订 · pending</h3>
+<p>用户要求不同入口不得出现不同描述。统一运行主开关、Computer Use 子选项及开盖锁定名称；弃用前版菜单“开启/关闭保持运行”的不同名称，菜单稳定标签加状态。菜单子选项勾选只表示偏好，应补充“待开启主开关”等与窗口一致的状态说明，避免将偏好误认为已生效。</p>
+<p>电源证据：Sources/CapsomniaPmsetHelper/main.swift 使用 pmset -a disablesleep 1；KeepDisplayAwakePolicy 和 DisplayAwakeAssertion 没有外接电源判断；未发现拔电自动停用逻辑。Apple <a href="https://github.com/apple-oss-distributions/PowerManagement/blob/main/pmset/pmset.1">pmset 手册</a>表明 -a 适用所有电源类型。核查日期 2026-10-13。这是代码与命令语义核查，不是本机合盖拔电实测；桌面自动化连续性仍需实际场景确认。不新增未经同意的电池阈值策略或供电限制。</p>
+</details></main></html>

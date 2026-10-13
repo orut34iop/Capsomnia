@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/fuji-mak/Capsomnia/releases/latest/download/Capsomnia.pkg"><img alt="Capsomnia.pkg 다운로드" src="https://img.shields.io/badge/Download-Capsomnia.pkg-b7ff3c?style=for-the-badge&labelColor=111111"></a>
+  <a href="https://github.com/orut34iop/Capsomnia/releases/latest/download/Capsomnia.pkg"><img alt="Capsomnia.pkg 다운로드" src="https://img.shields.io/badge/Download-Capsomnia.pkg-b7ff3c?style=for-the-badge&labelColor=111111"></a>
   <a href="https://capsomnia.com/ko/"><img alt="웹사이트" src="https://img.shields.io/badge/Website-Open-b7ff3c?style=for-the-badge&labelColor=111111"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/fuji-mak/Capsomnia/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/fuji-mak/Capsomnia/ci.yml?branch=main&style=flat-square&label=CI&labelColor=111111&color=b7ff3c"></a>
+  <a href="https://github.com/orut34iop/Capsomnia/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/orut34iop/Capsomnia/ci.yml?branch=main&style=flat-square&label=CI&labelColor=111111&color=b7ff3c"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-b7ff3c?style=flat-square&labelColor=111111">
   <img alt="Swift 5.9+" src="https://img.shields.io/badge/Swift-5.9%2B-b7ff3c?style=flat-square&labelColor=111111">
   <a href="LICENSE"><img alt="MIT 라이선스" src="https://img.shields.io/badge/License-MIT-b7ff3c?style=flat-square&labelColor=111111"></a>
@@ -30,7 +30,7 @@ Capsomnia는 Caps Lock을 MacBook 덮개를 닫은 채 작업할 때 쓰는 물�
 
 AI 에이전트를 돌리거나 모바일로 접속하는 등, 오래 걸리거나 원격으로 진행하는 작업에 유용합니다.
 
-Capsomnia는 텔레메트리를 수집하거나 계정을 요구하지 않습니다. 네트워크 사용은 GitHub의 공개 릴리스 정보를 읽는 하루 1회의 선택적 업데이트 확인(고급 설정에서 끌 수 있습니다), 업데이트 또는 CLI & Skill 설치를 선택했을 때 GitHub에서 설치 프로그램을 다운로드하는 작업, 그리고 "핫스팟 연결 유지"를 켰을 때 로컬 게이트웨이에 보내는 연결 확인으로 제한됩니다. 텔레메트리, 식별자, 개인 정보는 전송하지 않습니다.
+Capsomnia는 텔레메트리를 수집하거나 계정을 요구하지 않습니다. 네트워크는 사용자가 선택한 CLI & Skill 설치 프로그램 다운로드와 핫스팟 연결 유지를 위한 로컬 게이트웨이 확인에만 사용합니다. 이 fork는 앱 업데이트를 확인하거나 다운로드하지 않습니다.
 
 고급 설정의 "핫스팟 연결 유지"는 기본적으로 꺼져 있습니다. 이 기능을 켜면 Capsomnia가 켜져 있는 동안 iPhone 개인용 핫스팟 등 인식된 핫스팟의 게이트웨이에 1분마다 작은 연결 확인 패킷을 보내 유휴 상태의 연결 끊김을 방지합니다. 통신은 로컬 네트워크 안에서만 이루어지며 휴대전화 배터리 사용량이 조금 늘어날 수 있습니다. 끊어진 핫스팟에 자동으로 다시 연결하는 기능은 아닙니다.
 
@@ -52,7 +52,7 @@ Capsomnia는 텔레메트리를 수집하거나 계정을 요구하지 않습니
 
 서명된 패키지 설치 방법:
 
-1. [GitHub Releases](https://github.com/fuji-mak/Capsomnia/releases/latest)에서 `Capsomnia.pkg`를 다운로드합니다.
+1. [GitHub Releases](https://github.com/orut34iop/Capsomnia/releases/latest)에서 `Capsomnia.pkg`를 다운로드합니다.
 2. 패키지를 열고 설치 프로그램의 안내를 따릅니다.
 
 릴리스 패키지는 Developer ID로 서명하고 Apple 공증을 받았습니다. 패키지는 `/Applications`에 `Capsomnia.app`을 설치하고 서명된 네이티브 잠자기 제어 helper와 허용 범위를 좁힌 sudoers 규칙을 추가합니다. 이어서 LaunchAgent를 시작합니다. 설치가 끝나면 Capsomnia가 열리고, 이후에는 로그인할 때 자동으로 시작됩니다.
@@ -64,7 +64,7 @@ Capsomnia는 텔레메트리를 수집하거나 계정을 요구하지 않습니
 개발자용 소스 설치는 macOS 14 이상의 Apple silicon Mac과 macOS 13.5 이상의 Intel Mac을 지원합니다. Xcode 15 이상에 포함된 Swift 5.9 이상의 툴체인이 필요합니다.
 
 ```sh
-git clone https://github.com/fuji-mak/Capsomnia.git
+git clone https://github.com/orut34iop/Capsomnia.git
 cd Capsomnia
 ./scripts/install.sh
 ```
@@ -116,17 +116,12 @@ Capsomnia는 덮개를 닫아도 열어 둔 상태와 마찬가지로 작업을 
 
 ## 업데이트
 
-패키지로 설치했다면 [GitHub Releases](https://github.com/fuji-mak/Capsomnia/releases/latest)에서 최신 패키지를 다운로드해 실행하세요.
-
-소스에서 설치했다면 기존 clone을 다음과 같이 업데이트합니다.
+이 fork는 로컬에서 직접 관리합니다. 앱 내 업데이트 확인, 업데이트 메뉴 및 업데이트 다운로드 기능을 제거했습니다. 이 fork에서 검토한 변경 사항을 빌드해 설치하세요. 원본 프로젝트의 배포 패키지를 설치하면 로컬 변경 사항을 덮어씁니다.
 
 ```sh
 cd Capsomnia
-git pull
 ./scripts/install.sh
 ```
-
-설치 스크립트는 앱 번들, helper, sudoers 규칙, LaunchAgent를 현재 버전으로 덮어씁니다.
 
 ## 제거
 

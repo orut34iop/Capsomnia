@@ -44,7 +44,7 @@ final class ToolsDownloadController {
             case .failure(let error):
                 switch error {
                 case ToolsInstallation.Failure.cancelled: break
-                case ToolsInstallation.Failure.unsupportedPackage:
+                case ToolsInstallation.Failure.unsupportedPackage, DownloadError.packageUnavailable:
                     self?.showError(ToolsDownloadText.current.unavailable, for: window)
                 default: self?.showError(ToolsDownloadText.current.failure, for: window)
                 }
@@ -115,11 +115,11 @@ final class ToolsDownloadController {
         completion(result)
     }
 
-    enum DownloadError: Error { case invalidSource, invalidResponse, untrustedPackage }
+    enum DownloadError: Error { case invalidSource, invalidResponse, untrustedPackage, packageUnavailable }
 
     static func downloadPackage(from source: URL, completion: @escaping (Result<URL, Error>) -> Void) {
         // The preview points at a sibling local package. Releases use HTTPS.
-        guard source.isFileURL || source.scheme == "https" else {
+        guard source.isFileURL || ForkToolsSource.allowsReleaseURL(source) else {
             completion(.failure(DownloadError.invalidSource))
             return
         }
@@ -129,10 +129,16 @@ final class ToolsDownloadController {
             }
             return
         }
-        URLSession.shared.downloadTask(with: source) { location, response, error in
+        let session = URLSession(configuration: .ephemeral, delegate: ForkToolsSource(), delegateQueue: nil)
+        session.downloadTask(with: source) { location, response, error in
+            defer { session.finishTasksAndInvalidate() }
+            if (response as? HTTPURLResponse)?.statusCode == 404 {
+                completion(.failure(DownloadError.packageUnavailable))
+                return
+            }
             guard let location, error == nil,
                   (response as? HTTPURLResponse)?.statusCode == 200,
-                  response?.url?.scheme == "https" else {
+                  response?.url.map(ForkToolsSource.allowsDownloadURL) == true else {
                 completion(.failure(error ?? DownloadError.invalidResponse))
                 return
             }
@@ -151,7 +157,7 @@ final class ToolsDownloadController {
             try FileManager.default.copyItem(at: location, to: destination)
             if !source.isFileURL {
                 let signature = CommandRunner.run("/usr/sbin/pkgutil", ["--check-signature", destination.path])
-                guard UpdateCheck.installerSignatureIsTrusted(
+                guard PackageSignature.installerSignatureIsTrusted(
                     exitStatus: signature.status, output: signature.stdout, teamID: developerTeamID
                 ) else { throw DownloadError.untrustedPackage }
                 var values = URLResourceValues()
@@ -178,24 +184,24 @@ struct ToolsDownloadText {
         switch Preferences.language {
         case .japanese:
             return Self(entryTitle: "Capsomnia CLI & Skillをダウンロード", title: "CLI・Skillをインストールしますか？",
-                        body: "Capsomniaを操作するためのCLIとSkillをまとめてダウンロードします。",
+                        body: "この fork（orut34iop/Capsomnia）から CLI と Skill をダウンロードします。",
                         install: "インストール", cancel: "キャンセル", downloading: "ダウンロード中…", installing: "インストール中…",
-                        completed: "完了しました", unavailable: "対応する配布ファイルを準備中です。",
+                        completed: "完了しました", unavailable: "この fork には対応する CLI & Skill パッケージがまだ公開されていません。",
                         failure: "インストールを完了できませんでした。もう一度お試しください。")
         case .english:
-            return Self(entryTitle: "Download Capsomnia CLI & Skill", title: "Install CLI & Skill?", body: "Download the CLI and Skill for controlling Capsomnia together.",
+            return Self(entryTitle: "Download Capsomnia CLI & Skill", title: "Install CLI & Skill?", body: "Download CLI and Skill from this fork (orut34iop/Capsomnia).",
                         install: "Install", cancel: "Cancel", downloading: "Downloading…", installing: "Installing…",
-                        completed: "Installation completed.", unavailable: "The compatible package is being prepared.",
+                        completed: "Installation completed.", unavailable: "This fork has not published a compatible CLI & Skill package yet.",
                         failure: "Could not complete installation. Please try again.")
         case .korean:
-            return Self(entryTitle: "Capsomnia CLI & Skill 다운로드", title: "CLI와 Skill을 설치할까요?", body: "Capsomnia를 제어하기 위한 CLI와 Skill을 함께 다운로드합니다.",
+            return Self(entryTitle: "Capsomnia CLI & Skill 다운로드", title: "CLI와 Skill을 설치할까요?", body: "이 fork(orut34iop/Capsomnia)에서 CLI와 Skill을 다운로드합니다.",
                         install: "설치", cancel: "취소", downloading: "다운로드 중…", installing: "설치 중…",
-                        completed: "설치가 완료되었습니다.", unavailable: "호환되는 배포 파일을 준비 중입니다.",
+                        completed: "설치가 완료되었습니다.", unavailable: "이 fork에는 호환되는 CLI & Skill 패키지가 아직 게시되지 않았습니다.",
                         failure: "설치를 완료하지 못했습니다. 다시 시도하세요.")
         case .simplifiedChinese:
-            return Self(entryTitle: "下载 Capsomnia CLI & Skill", title: "要安装 CLI 和 Skill 吗？", body: "一起下载用于控制 Capsomnia 的 CLI 和 Skill。",
+            return Self(entryTitle: "下载 Capsomnia CLI & Skill", title: "要安装 CLI 和 Skill 吗？", body: "从当前 fork（orut34iop/Capsomnia）下载 CLI 和 Skill。",
                         install: "安装", cancel: "取消", downloading: "正在下载…", installing: "正在安装…",
-                        completed: "安装已完成。", unavailable: "正在准备兼容的发布文件。",
+                        completed: "安装已完成。", unavailable: "当前 fork 尚未发布可用的 CLI & Skill 安装包。",
                         failure: "未能完成安装。请重试。")
         }
     }

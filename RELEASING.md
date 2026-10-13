@@ -5,9 +5,11 @@ Capsomnia releases publish two package assets:
 - `Capsomnia-<version>.pkg` for versioned downloads
 - `Capsomnia.pkg` for stable `releases/latest/download/Capsomnia.pkg` links
 
-The optional `Capsomnia-Tools.pkg` bundle is built and published in the
-[cpsm repository](https://github.com/fuji-mak/cpsm). Publish that bundle before
-the Capsomnia release that links to it. See [distribution preparation](docs/distribution.md).
+All downloads for this fork belong to `orut34iop/Capsomnia`. The optional
+`Capsomnia-Tools.pkg` must be built from CLI and Skill sources maintained by this
+fork and uploaded to its own GitHub release. Those full sources and the Tools
+release are not present yet. Do not substitute the upstream package.
+See [distribution preparation](docs/distribution.md).
 
 ## Version Updates
 

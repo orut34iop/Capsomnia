@@ -1,0 +1,38 @@
+<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Capsomnia · 简化设置交互草图</title>
+<style>
+*{box-sizing:border-box}body{margin:0;padding:32px;background:#171a18;color:#eff2e9;font:15px/1.6 -apple-system,BlinkMacSystemFont,sans-serif}main{max-width:1020px;margin:auto}h1{font-size:25px;margin:0}p{color:#adb5a5}small{font-size:12px;color:#a7b09e}.layout{display:grid;grid-template-columns:430px 1fr;gap:34px;align-items:start;margin-top:26px}.app{border:1px solid #41483a;border-radius:24px;background:#000;padding:28px}.header{display:flex;gap:12px;align-items:center;margin-bottom:24px}.dot{width:23px;height:23px;border-radius:50%;background:#93978d;flex-shrink:0}h2{font-size:23px;margin:0}.row{display:flex;align-items:center;justify-content:space-between;gap:12px}.card{padding:20px;border:1px solid #30352a;border-radius:17px;margin:16px 0}.label{font-size:17px;font-weight:650}.sub{margin:7px 0 0;font-size:13px;line-height:1.6}.switch{width:44px;height:27px;flex-shrink:0;border:0;border-radius:20px;background:#555a50;padding:3px;cursor:pointer}.switch i{display:block;width:21px;height:21px;background:white;border-radius:50%}.switch[aria-checked=true]{background:#b8ff1f}.switch[aria-checked=true] i{margin-left:17px}.switch:disabled{opacity:.45;cursor:default}.mode{display:flex;gap:10px;margin-top:15px;padding:12px;border:1px solid #30352a;border-radius:11px;cursor:pointer}.mode:has(input:checked){border-color:#8cbe25;background:#151c08}input{accent-color:#b8ff1f}label strong{font-size:15px}label small{display:block;font-size:12px}button,select{font:inherit}button:focus-visible,input:focus-visible{outline:2px solid white;outline-offset:4px}.lock{border-top:1px solid #30352a;padding-top:16px;margin-top:18px}.result{min-height:76px;margin-top:18px;font-size:14px;color:#cad3be;border-left:3px solid #68765b;padding-left:12px}.links{display:flex;gap:18px;margin-top:20px;color:#c0c8b6;font-size:13px}.power{font-size:12px;margin:18px 0 0;color:#959e8b}.preview{padding:22px;border:1px solid #485040;border-radius:16px;background:#252a22}.menurow{padding:10px 8px;border-radius:7px}.selected{background:#333e27}.menumode{margin-left:24px}.menumode small{display:block}.separator{border-top:1px solid #414b38;margin:8px 0}.explain{padding:8px 2px}.explain h3{font-size:16px}.explain li{margin:12px 0}a{color:#b8ff1f}details{margin-top:26px;border-top:1px solid #404638;padding-top:18px;font-size:13px}summary{cursor:pointer}li{margin:8px 0}[hidden]{display:none!important}@media(max-width:850px){.layout{grid-template-columns:1fr}.app{max-width:430px;width:100%;margin:auto}body{padding:20px}}
+</style><main><h1>只回答三个问题：是否运行、运行什么、开盖后怎么办</h1><p>交互草图 · 可以点击开关和模式查看关联。这里的操作不会控制你的 Mac。</p><div class="layout"><section class="app" aria-label="应用窗口草图"><div class="header"><span id="dot" class="dot"></span><h2>Capsomnia</h2></div>
+<div class="card"><div class="row"><span class="label">保持运行</span><button id="master" class="switch" role="switch" aria-checked="false" aria-label="保持运行"><i></i></button></div><p id="status" class="sub" role="status">已关闭 · 下方设置暂不生效</p></div>
+<div class="card"><div class="label">合盖后继续</div><label class="mode"><input type="radio" name="mode" value="background"><span><strong>仅后台任务</strong><small>编译、下载等继续运行；屏幕可休眠或锁定。</small></span></label><label class="mode"><input type="radio" name="mode" value="screen" checked><span><strong>屏幕自动操作</strong><small>为需要点击、输入的工具保留屏幕操作环境，例如 Computer Use。</small></span></label>
+<div id="lockSection" class="lock"><div class="row"><span>开盖后锁定屏幕</span><button id="lock" class="switch" role="switch" aria-checked="true" aria-label="开盖后锁定屏幕"><i></i></button></div><p class="sub">合盖期间不触发此锁定；开盖后锁定，解锁后显示原因和时间。</p></div></div>
+<div id="result" class="result" role="status"></div><div class="links"><span>自动结束：不自动结束</span><span>更多设置 ›</span></div><p class="power">长时间合盖运行建议连接电源。</p></section>
+<aside><h3 style="margin-top:0">菜单栏：同样的名称、同样的状态</h3><div class="preview"><div id="menuMaster" class="menurow"></div><div class="separator"></div><div class="menurow">合盖后继续 ▸</div><div id="menuBackground" class="menumode menurow"></div><div id="menuScreen" class="menumode menurow"></div><div id="menuLock" class="menurow"></div><div class="separator"></div><div class="menurow">自动结束 ▸　不自动结束</div><div class="menurow">打开 Capsomnia</div><div class="menurow">退出</div></div>
+<div class="explain"><h3>功能关系</h3><ul><li><b>总开关关闭：</b>下面都是预设，不会单独生效。</li><li><b>仅后台任务：</b>保持电脑运行，不额外保持屏幕操作环境。</li><li><b>屏幕自动操作：</b>在保持运行的基础上保留屏幕操作环境；“开盖后锁定屏幕”只适用于这个模式。</li><li><b>电源：</b>不是模式，也不是开关。现有代码不要求接电，拔电行为仍需本机实测。</li></ul><p>仍可手动锁屏；定时结束、手动锁屏或开盖后锁定都可能中断屏幕自动操作。界面不会承诺“永不锁屏”或“自动化一定成功”。</p></div></aside></div>
+<details><summary>评审记录与实现边界（待确认）</summary><p>2026-10-13 · Round 1 continued · mandatory_manual · UI-001 · pending。此方案依据用户要求“普通使用者清晰理解关联，但菜单尽量简单”修订。未修改产品代码。<a href="awake-state-2026-10-13-v1.html">前版记录及来源</a>保留，不覆盖原始决策依据。</p><ul>
+<li>由功能术语改为任务选择：保持运行是主开关；两种模式映射现有 keepDisplayAwake 偏好，false 为后台，true 为屏幕操作。无新防休眠实现，不叠加独立“防锁定”开关。</li>
+<li>主开关关闭时模式仍可预选；开盖锁定也可预设，但所有入口明确“暂不生效”。屏幕操作模式才展示开盖锁定子项；切换后台模式时保存其原偏好但不生效。此条件展示为本轮待确认设计选择。</li>
+<li>菜单主项“保持运行”，勾选表示实际已确认开启；模式子菜单与窗口名称完全一致。菜单草图将子菜单展开用于对照，实际主菜单不常驻展开。</li>
+<li>设置值改变不等于启用。主开关执行应即时显示“正在开启/关闭”，防止重复提交；成功、失败、未知和部分能力失败按实际结果显示。固定状态槽不因提示改变而跳动。草图不模拟调用延迟，真实产品须保留前版 pending/失败验收。</li>
+<li>顶部状态和一句场景摘要解释组合，不增加独立风险设置。屏幕操作模式只调暗内置屏幕、不宣称物理显示器完全断电；手动锁屏或系统事件不在本应用保证范围。</li>
+<li>“开盖后锁定屏幕”沿用已实现的约250ms检测和解锁后的原因/时间记录。“自动结束”默认不限时，仅作为次要项。更多设置保留快捷键、语言、历史记录等。</li>
+<li>供电只放建议文字，不新增电源检测、阈值开关、拔电停用或强制接电。pmset -a 和桌面保持策略没有仅外接电源限制；本机合盖拔电场景尚未验证，不能宣称实测通过。</li>
+<li>关闭状态摘要明确无功能生效。后台状态明确不支持维持屏幕操作环境。屏幕模式摘要明确合盖与开盖的不同时段，避免“防锁定”和“自动锁定”看似矛盾。</li>
+<li>后续验收：原生布局支持全部现有语言，尤其长名称菜单；保持键盘、VoiceOver、焦点；保存现有偏好和定时行为；所有入口共享已确认运行状态；测试模式切换及隐藏子选项的偏好保留。签名构建遵守用户规则。</li>
+</ul><p>当前原生实现证据、Apple 开关指南和 MIT KeepingYouAwake 参考来源见前版。只借鉴状态关联，没有复用外部代码。产品修改、构建安装、提交尚未进行。确认结果：等待用户对本版结构和文案的决定。</p></details></main>
+<script>
+let running=false, screen=true, lock=true;
+const el=id=>document.getElementById(id);
+function render(){
+ el('master').setAttribute('aria-checked',String(running));el('lock').setAttribute('aria-checked',String(lock));
+ el('dot').style.background=running?'#b8ff1f':'#93978d';el('dot').style.boxShadow=running?'0 0 14px #b8ff1f70':'none';
+ el('status').textContent=running?'已开启 · '+(screen?'屏幕自动操作':'仅后台任务'):'已关闭 · 下方设置暂不生效';
+ el('lockSection').hidden=!screen;
+ el('result').textContent=!running?'当前不会保持运行。开启后，才会按下面选择的方式处理合盖和开盖。':!screen?'合盖后：后台任务继续，屏幕可锁定。开盖后：按系统正常行为处理。':'合盖后：保留屏幕操作环境。开盖后：'+(lock?'锁定屏幕，屏幕自动操作可能中断。':'本应用不主动锁定。');
+ el('menuMaster').textContent=(running?'✓ ':'○ ')+'保持运行 · '+(running?'已开启':'已关闭');
+ el('menuBackground').textContent=(!screen?'✓ ':'　')+'仅后台任务';el('menuScreen').textContent=(screen?'✓ ':'　')+'屏幕自动操作';
+ el('menuScreen').classList.toggle('selected',screen);el('menuBackground').classList.toggle('selected',!screen);
+ el('menuLock').hidden=!screen;el('menuLock').textContent=(lock?'✓ ':'○ ')+'开盖后锁定屏幕'+(!running?'（暂不生效）':'');
+}
+el('master').onclick=()=>{running=!running;render()};el('lock').onclick=()=>{lock=!lock;render()};
+document.querySelectorAll('input[name=mode]').forEach(x=>x.onchange=()=>{screen=x.value==='screen';render()});render();
+</script></html>

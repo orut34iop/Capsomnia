@@ -27,7 +27,7 @@ Please include:
 
 Capsomnia's menu bar app runs as the current user. It does not run as root.
 
-Capsomnia does not collect telemetry or require an account. Its only network use is an optional daily update check that reads GitHub's public release information (off switch in Advanced Settings), plus downloading installers from GitHub when you choose to update or install CLI & Skill. Capsomnia sends no telemetry, identifiers, or personal data; the requests carry only standard network metadata.
+This locally maintained fork has no built-in app update checks or app update downloads. Optional CLI & Skill downloads still require an explicit user action. Hotspot keep-alive probes only the local gateway when enabled.
 
 When "Prevent all-caps typing" is disabled, Capsomnia does not request Input Monitoring or inspect keyboard events. When enabled, it requires Accessibility permission for a local active Core Graphics event filter. The filter removes only the Caps Lock modifier and suppresses the Caps Lock modifier-change event; it does not log, persist, or transmit event contents. If the filter is unavailable, Capsomnia turns sleep prevention off and reports an error instead of acting on the physical switch.
 
@@ -66,8 +66,10 @@ There is no network listener. The CLI does not add privileged helper modes.
 Explicit CLI off, including a toggle targeting off, verifies Caps Lock and
 sleep-prevention release before requesting sleep as the signed-in user.
 
-The optional Tools download uses an HTTPS release URL. Capsomnia checks the
-installer's Developer ID team before opening it and marks it as a downloaded
-file. Local preview builds may use an explicitly configured file URL. Tools
+The optional Tools download is restricted to HTTPS releases from
+`orut34iop/Capsomnia`, with redirects allowed only within that release path or
+to GitHub’s release asset CDN. Upstream URLs and the upstream signing team are
+not accepted. Capsomnia checks the fork maintainer’s installer signing team
+`B829A49G4D` and marks the package as a downloaded file. Local preview builds may use an explicitly configured file URL. Tools
 installers contain two CLIs and optional common Skills, written as the console
 user. App uninstallation leaves these separately installed tools in place.

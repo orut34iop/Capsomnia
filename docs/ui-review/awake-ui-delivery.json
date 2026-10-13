@@ -1,0 +1,36 @@
+{
+  "date": "2026-10-13",
+  "decision": "user_confirmed",
+  "implementation": "complete",
+  "tests": {
+    "total": 167,
+    "skipped": 2,
+    "failures": 0
+  },
+  "verification": [
+    "Four-language native window rendering",
+    "Shared menu/window labels, state, pending and failure",
+    "Dependent option hides without losing preference",
+    "No layout changes across runtime feedback states"
+  ],
+  "details": "Timer moved into a secondary page to keep the main window compact. HID changes wait until AppKit mouse tracking finishes. Observing a new physical state clears stale toggle failure.",
+  "signing_team": "B829A49G4D",
+  "signing": "Apple Development; app and helper strictly verified. Local outer pkg is unsigned, not notarized.",
+  "git_delivery": "User authorized commit and push after acceptance. This delivery includes the prerequisite fork/update/lid-lock changes and the approved awake UI. Git history supersedes the temporary batch-only patch.",
+  "screenshots": [
+    "awake-zh-Hans-on.png",
+    "awake-zh-Hans-off.png",
+    "awake-zh-Hans-starting.png",
+    "awake-zh-Hans-failed.png"
+  ],
+  "limitations": [
+    "No closed-lid battery unplug test",
+    "No end-to-end Computer Use continuity test",
+    "Rendered screenshots use simulated states"
+  ],
+  "installed_verification": "Passed: signatures valid, installed binaries match payload, app running and doctor healthy",
+  "user_acceptance": {
+    "date": "2026-10-13",
+    "result": "passed"
+  }
+}

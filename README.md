@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/fuji-mak/Capsomnia/releases/latest/download/Capsomnia.pkg"><img alt="Download Capsomnia.pkg" src="https://img.shields.io/badge/Download-Capsomnia.pkg-b7ff3c?style=for-the-badge&labelColor=111111"></a>
+  <a href="https://github.com/orut34iop/Capsomnia/releases/latest/download/Capsomnia.pkg"><img alt="Download Capsomnia.pkg" src="https://img.shields.io/badge/Download-Capsomnia.pkg-b7ff3c?style=for-the-badge&labelColor=111111"></a>
   <a href="https://capsomnia.com/"><img alt="Website" src="https://img.shields.io/badge/Website-Open-b7ff3c?style=for-the-badge&labelColor=111111"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/fuji-mak/Capsomnia/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/fuji-mak/Capsomnia/ci.yml?branch=main&style=flat-square&label=CI&labelColor=111111&color=b7ff3c"></a>
+  <a href="https://github.com/orut34iop/Capsomnia/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/orut34iop/Capsomnia/ci.yml?branch=main&style=flat-square&label=CI&labelColor=111111&color=b7ff3c"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-b7ff3c?style=flat-square&labelColor=111111">
   <img alt="Swift 5.9+" src="https://img.shields.io/badge/Swift-5.9%2B-b7ff3c?style=flat-square&labelColor=111111">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-b7ff3c?style=flat-square&labelColor=111111"></a>
@@ -30,7 +30,7 @@ Turn Caps Lock on when local work should keep running. Turn Caps Lock off when y
 
 It is useful for AI agents, mobile access, and other long-running or remote work.
 
-Capsomnia does not collect telemetry or require an account. Network use is limited to an optional daily update check that reads GitHub's public release information (off switch in Advanced Settings), downloading installers from GitHub when you choose to update or install CLI & Skill, and local gateway probes when "Keep hotspot connected" is enabled. Capsomnia sends no telemetry, identifiers, or personal data.
+Capsomnia does not collect telemetry or require an account. Network use is limited to downloading the optional CLI & Skill installer when requested, and local gateway probes when "Keep hotspot connected" is enabled. This fork does not check for or download app updates.
 
 <p align="center">
   <img src="resources/caps-lock-on.jpg" alt="Caps Lock light on" width="560">
@@ -50,7 +50,7 @@ Requirements:
 
 Install the signed package:
 
-1. Download `Capsomnia.pkg` from [GitHub Releases](https://github.com/fuji-mak/Capsomnia/releases/latest).
+1. Download `Capsomnia.pkg` from [GitHub Releases](https://github.com/orut34iop/Capsomnia/releases/latest).
 2. Open the package and follow the installer.
 
 Release packages are signed with Developer ID and notarized by Apple. The package installs `Capsomnia.app` in `/Applications`, installs the signed native privileged sleep-control helper, adds a narrow sudoers rule, and starts the LaunchAgent. Capsomnia opens after installation and starts automatically at login afterward.
@@ -62,15 +62,14 @@ The package build and install scripts are public in [`scripts/build-pkg.sh`](scr
 In **Advanced Settings → Download Capsomnia CLI & Skill**, confirm **Install** in the dialog to add both tools.
 Capsomnia downloads the package and installs it after macOS authentication,
 then shows a completion dialog. There are no agent or folder choices. The app's own package
-contains only the app and its helper; `Capsomnia-Tools.pkg`, published in the cpsm
-repository, adds the optional tools.
+contains only the app and its helper; `Capsomnia-Tools.pkg`, to be published in this fork, adds the optional tools.
 
-- **[cpsm](https://github.com/fuji-mak/cpsm)**: Capsomnia CLI and common `capsomnia`
+- **cpsm**: Capsomnia CLI and common `capsomnia`
   Skill. Requires this app; one-shot timers and explicit off include sleep.
-- **[MacReady](https://github.com/fuji-mak/MacReady)**: independent read-only Mac
+- **MacReady**: independent read-only Mac
   state CLI and `macready` Skill. Does not require the app.
 
-The app downloads the signed and notarized Tools package from the cpsm GitHub release.
+The app accepts Tools downloads only from `orut34iop/Capsomnia` releases (including GitHub asset CDN redirects), signed by this fork maintainer’s Apple team `B829A49G4D`. It never falls back to upstream. No Tools release currently exists in this fork; the full CLI and Skill sources must be imported and maintained here before building and publishing `Capsomnia-Tools.pkg`. The vendored libraries alone do not include the CLI executables or Skills.
 Skills are shared in `~/.agents/skills/`, with automatic Claude Code links.
 Normal CLI usage stays local. [Distribution and compatibility](docs/distribution.md).
 
@@ -79,7 +78,7 @@ Normal CLI usage stays local. [Distribution and compatibility](docs/distribution
 Developer source installation supports Apple silicon Macs on macOS 14 or later and Intel Macs on macOS 13.5 or later. It requires Swift 5.9 or later, included with Xcode 15 or later:
 
 ```sh
-git clone https://github.com/fuji-mak/Capsomnia.git
+git clone https://github.com/orut34iop/Capsomnia.git
 cd Capsomnia
 ./scripts/install.sh
 ```
@@ -87,6 +86,10 @@ cd Capsomnia
 The source installer builds `Capsomnia.app` locally, places it in `~/Applications/`, installs the restricted helper and sudoers rule, and starts a user LaunchAgent. The signed and notarized release package remains Apple silicon-only and requires macOS 14 or later.
 
 ## What It Does
+
+This fork also adds **Lock when lid opens**, off by default, below the Computer Use display setting. It operates only while Capsomnia and Computer Use mode are enabled and sleep prevention has been successfully applied. A closed-to-open transition requests a system lock; starting with an open lid does not. Detection uses the existing approximately 250 ms polling interval, subject to scheduling delays, so it does not guarantee immediate concealment.
+
+The notice shows the last observed lid closing, lid opening detection, and lock confirmation times, including the local time zone. Lock request times remain internal. Missing times in older records or after startup with a closed lid are shown as “Not recorded”. An optional system notification supplements a persistent, nonactivating notice after unlock. Dismissing the notice retains the record in Advanced Settings. Existing locks, unavailable state, failed requests, and unconfirmed requests are reported separately. The record does not certify automation throughout the preceding closed-lid interval. Locking uses a private macOS login-framework entry point that may change across OS versions; desktop automation may pause once locked.
 
 - Prevent all-caps typing (optional): when Capsomnia is on, Caps Lock no longer forces uppercase input. Shift still types uppercase letters.
 - Caps Lock on: keeps AI agents and other work from being interrupted when the MacBook lid is closed. Remote operation through tools such as Codex Mobile remains possible. The Caps Lock light physically shows the current state.
@@ -133,17 +136,12 @@ Capsomnia keeps work running in closed-lid use the same way it would while the l
 
 ## Update
 
-For package installs, download and run the latest package from [GitHub Releases](https://github.com/fuji-mak/Capsomnia/releases/latest).
-
-For source installs, update from an existing clone:
+This fork is maintained locally. All built-in app update checks, update menus, and update downloads have been removed. Rebuild and install reviewed changes from this fork; installing an upstream release package will overwrite local customizations.
 
 ```sh
 cd Capsomnia
-git pull
 ./scripts/install.sh
 ```
-
-The install script overwrites the app bundle, helper, sudoers rule, and LaunchAgent with the current version.
 
 ## Uninstall
 

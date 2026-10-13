@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/fuji-mak/Capsomnia/releases/latest/download/Capsomnia.pkg"><img alt="下载Capsomnia.pkg" src="https://img.shields.io/badge/Download-Capsomnia.pkg-b7ff3c?style=for-the-badge&labelColor=111111"></a>
+  <a href="https://github.com/orut34iop/Capsomnia/releases/latest/download/Capsomnia.pkg"><img alt="下载Capsomnia.pkg" src="https://img.shields.io/badge/Download-Capsomnia.pkg-b7ff3c?style=for-the-badge&labelColor=111111"></a>
   <a href="https://capsomnia.com/zh-hans/"><img alt="网站" src="https://img.shields.io/badge/Website-Open-b7ff3c?style=for-the-badge&labelColor=111111"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/fuji-mak/Capsomnia/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/fuji-mak/Capsomnia/ci.yml?branch=main&style=flat-square&label=CI&labelColor=111111&color=b7ff3c"></a>
+  <a href="https://github.com/orut34iop/Capsomnia/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/orut34iop/Capsomnia/ci.yml?branch=main&style=flat-square&label=CI&labelColor=111111&color=b7ff3c"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-b7ff3c?style=flat-square&labelColor=111111">
   <img alt="Swift 5.9+" src="https://img.shields.io/badge/Swift-5.9%2B-b7ff3c?style=flat-square&labelColor=111111">
   <a href="LICENSE"><img alt="MIT 许可证" src="https://img.shields.io/badge/License-MIT-b7ff3c?style=flat-square&labelColor=111111"></a>
@@ -32,7 +32,7 @@ Capsomnia是一款小巧的macOS菜单栏应用，可将Caps Lock变成MacBook�
 
 它适用于AI智能体、移动端访问，以及其他耗时较长或需要远程操作的任务。
 
-Capsomnia不会收集遥测数据，也不需要账户。网络用途仅限于每天一次的可选更新检查（读取 GitHub 的公开发布信息，可在高级设置中关闭）、在您选择更新或安装 CLI & Skill 时从 GitHub 下载安装器，以及启用“保持热点连接”后向本地网关发送连通性检查。Capsomnia 不会发送遥测数据、标识符或个人信息。
+Capsomnia 不收集遥测数据，也不需要账户。网络用途仅限于用户主动安装 CLI & Skill 时下载安装器，以及启用“保持热点连接”后向本地网关发送连通性检查。本 fork 不检查或下载应用更新。
 
 高级设置中的“保持热点连接”默认关闭。启用后，Capsomnia 开启期间会每分钟向识别到的热点网关（包括 iPhone 个人热点）发送一次小型连通性检查，以减少空闲时自动断开连接的情况。通信仅限于本地网络，可能略微增加手机的耗电量。此功能不会自动重新连接已断开的热点。
 
@@ -54,7 +54,7 @@ Capsomnia不会收集遥测数据，也不需要账户。网络用途仅限于�
 
 安装已签名的软件包：
 
-1. 从[GitHub Releases](https://github.com/fuji-mak/Capsomnia/releases/latest)下载`Capsomnia.pkg`。
+1. 从[GitHub Releases](https://github.com/orut34iop/Capsomnia/releases/latest)下载`Capsomnia.pkg`。
 2. 打开软件包并按照安装器提示操作。
 
 发布的软件包使用Developer ID签名，并已通过Apple公证。软件包会将`Capsomnia.app`安装到`/Applications`，安装已签名的原生特权休眠控制辅助程序，添加权限范围严格受限的sudoers规则，并启动LaunchAgent。安装完成后Capsomnia会自动打开，之后会在登录时自动启动。
@@ -66,7 +66,7 @@ Capsomnia不会收集遥测数据，也不需要账户。网络用途仅限于�
 开发者源代码安装支持运行macOS 14或更高版本的Apple芯片Mac，以及运行macOS 13.5或更高版本的Intel Mac。需要Xcode 15或更高版本附带的Swift 5.9或更高版本工具链：
 
 ```sh
-git clone https://github.com/fuji-mak/Capsomnia.git
+git clone https://github.com/orut34iop/Capsomnia.git
 cd Capsomnia
 ./scripts/install.sh
 ```
@@ -84,6 +84,20 @@ cd Capsomnia
 - 退出应用：恢复正常睡眠行为。
 
 Capsomnia适合长时间运行的本地任务、AI编程智能体、SSH会话、构建、下载和无人值守脚本。
+
+## 保持运行与 Computer Use 设置（本 fork）
+
+设置窗口和菜单栏使用同一组入口：“保持运行”是总开关；“使用 Computer Use 等工具”在主开关开启成功后，阻止显示屏因空闲休眠、跳过应用的合盖显示休眠请求，并在合盖时调暗内置屏幕。该选项不修改系统密码或锁屏设置，也不启动 Computer Use。仅勾选而未开启主开关时，会显示等待生效。
+
+主窗口显示已确认的运行状态、切换中的状态和错误；图标与菜单栏同步。“开盖后锁定屏幕”只在 Computer Use 选项开启时显示，关闭该选项仍保留原来的开盖锁定偏好。合盖/开盖摘要解释当前组合。“自动结束”通过次要入口进入独立定时页面，默认“不自动结束”。原有 Caps Lock 和快捷键入口继续可用。
+
+## 开盖后自动锁定（本 fork）
+
+日常设置中，“使用 Computer Use 等工具”下方的“开盖后锁定屏幕”默认关闭。开启后，仅当 Capsomnia 和 Computer Use 模式均开启且防休眠已成功应用时，检测到合盖变为开盖才会请求系统锁定；启动时盖子已打开不会触发。检测复用约 250 ms 的轮询，系统调度可能增加延迟，因此不保证开盖瞬间遮挡画面。
+
+提示前三行依次显示最近一次合盖、检测到开盖、确认系统锁定的本地时间（含时区），不再显示请求锁定时间。旧记录或启动时已经合盖等无法确定合盖时间的情况显示“未记录”。允许通知时会补充系统通知；解锁后显示不抢焦点的说明浮窗，点击“知道了”关闭，或通过浮窗的“查看记录”进入高级设置查看最近一次记录。未确认、接口不可用及检测时已经锁定会单独标示，不会误报为开盖锁定成功。记录只说明本次事件，不证明此前整个合盖期间的自动化状态。
+
+锁定使用 macOS 私有登录框架接口，系统升级可能影响可用性。锁定后桌面自动化可能暂停；此设置不改变此前合盖期间的防休眠与亮度管理。
 
 ## 使用注意事项
 
@@ -118,17 +132,12 @@ Capsomnia可以让任务在合盖后像开盖时一样继续运行。黄绿色�
 
 ## 更新
 
-如果通过软件包安装，请从[GitHub Releases](https://github.com/fuji-mak/Capsomnia/releases/latest)下载并运行最新软件包。
-
-如果从源代码安装，可以在现有克隆中更新：
+本 fork 由本地自行维护，已移除应用内更新检查、更新菜单和更新下载安装功能。请在此 fork 中完成代码修改与审查后重新构建安装；安装上游发布包会覆盖本地定制。
 
 ```sh
 cd Capsomnia
-git pull
 ./scripts/install.sh
 ```
-
-安装脚本会用当前版本覆盖应用程序包、辅助程序、sudoers规则和LaunchAgent。
 
 ## 卸载
 
@@ -241,4 +250,4 @@ MIT
 
 ## CLI & Skill
 
-可在高级设置的 CLI & Skill 中一起安装 cpsm、MacReady 和通用 Skill。cpsm需要Capsomnia应用，MacReady可独立运行。Skill安装到通用位置，并自动创建Claude Code所需的链接。应用从GitHub下载已签名并通过公证的Tools软件包，安装后显示完成对话框。[发布准备](docs/distribution.md)。
+可在高级设置的 CLI & Skill 中一起安装 cpsm、MacReady 和通用 Skill。cpsm需要Capsomnia应用，MacReady可独立运行。Skill安装到通用位置，并自动创建Claude Code所需的链接。应用只从当前 fork `orut34iop/Capsomnia` 下载由维护者团队 `B829A49G4D` 签名的 Tools 安装包，绝不回退到上游。当前 fork 尚无 Tools Release，也尚未包含完整 CLI 与 Skill 源码；需先迁入维护、构建并发布 `Capsomnia-Tools.pkg`，才能使用此入口。[发布准备](docs/distribution.md)。

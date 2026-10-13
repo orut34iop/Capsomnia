@@ -9,12 +9,12 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/fuji-mak/Capsomnia/releases/latest/download/Capsomnia.pkg"><img alt="Capsomnia.pkgをダウンロード" src="https://img.shields.io/badge/Download-Capsomnia.pkg-b7ff3c?style=for-the-badge&labelColor=111111"></a>
+  <a href="https://github.com/orut34iop/Capsomnia/releases/latest/download/Capsomnia.pkg"><img alt="Capsomnia.pkgをダウンロード" src="https://img.shields.io/badge/Download-Capsomnia.pkg-b7ff3c?style=for-the-badge&labelColor=111111"></a>
   <a href="https://capsomnia.com/ja/"><img alt="Website" src="https://img.shields.io/badge/Website-Open-b7ff3c?style=for-the-badge&labelColor=111111"></a>
 </p>
 
 <p align="center">
-  <a href="https://github.com/fuji-mak/Capsomnia/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/fuji-mak/Capsomnia/ci.yml?branch=main&style=flat-square&label=CI&labelColor=111111&color=b7ff3c"></a>
+  <a href="https://github.com/orut34iop/Capsomnia/actions/workflows/ci.yml"><img alt="CI" src="https://img.shields.io/github/actions/workflow/status/orut34iop/Capsomnia/ci.yml?branch=main&style=flat-square&label=CI&labelColor=111111&color=b7ff3c"></a>
   <img alt="macOS 14+" src="https://img.shields.io/badge/macOS-14%2B-b7ff3c?style=flat-square&labelColor=111111">
   <img alt="Swift 5.9+" src="https://img.shields.io/badge/Swift-5.9%2B-b7ff3c?style=flat-square&labelColor=111111">
   <a href="LICENSE"><img alt="MIT License" src="https://img.shields.io/badge/License-MIT-b7ff3c?style=flat-square&labelColor=111111"></a>
@@ -30,7 +30,7 @@
 
 AIエージェントの実行、モバイル接続、その他長時間の実行や遠隔での作業に有効です。
 
-Capsomnia はテレメトリを収集せず、アカウントも必要としません。ネットワーク通信は、GitHubの公開リリース情報を読み取る1日1回のアップデート確認（詳細設定でオフにできます）、アップデートやCLI & Skill導入を選択した際のGitHubからのインストーラのダウンロード、および「テザリング時に接続を維持」を有効にした際のローカルゲートウェイへの疎通確認に限られます。テレメトリや識別子、個人情報を送信することはありません。
+Capsomnia はテレメトリを収集せず、アカウントも必要としません。通信は、ユーザーが選択した CLI & Skill インストーラのダウンロードと、テザリング接続維持のローカルゲートウェイ確認に限られます。この fork はアプリの更新確認やダウンロードを行いません。
 
 詳細設定の「テザリング時に接続を維持」は初期状態ではオフです。有効にすると、Capsomniaがオンの間、iPhoneのインターネット共有など認識できるテザリングの接続先へ1分に1回、小さな疎通確認を送り、アイドル時の切断を防ぎます。通信はローカルネットワーク内に限られ、スマートフォンの電池消費がわずかに増える場合があります。切れた接続を自動で再接続する機能ではありません。
 
@@ -52,7 +52,7 @@ Capsomnia はテレメトリを収集せず、アカウントも必要としま�
 
 署名済みパッケージでインストール:
 
-1. [GitHub Releases](https://github.com/fuji-mak/Capsomnia/releases/latest) から `Capsomnia.pkg` をダウンロード
+1. [GitHub Releases](https://github.com/orut34iop/Capsomnia/releases/latest) から `Capsomnia.pkg` をダウンロード
 2. パッケージを開き、インストーラに従う
 
 リリース用パッケージは Developer ID で署名し、Apple の公証を通しています。パッケージは `Capsomnia.app` を `/Applications` に配置し、署名済みネイティブ privileged helper、限定的な sudoers rule、LaunchAgent を設定します。インストール後、Capsomnia が開き、以降はログイン時に自動起動します。
@@ -79,7 +79,7 @@ Claude Code用のリンクを自動で作成します。
 開発者向けのソースインストールは、macOS 14 以降の Apple silicon MacとmacOS 13.5 以降の Intel Macに対応します。Xcode 15以降に含まれるSwift 5.9以降のtoolchainが必要です。
 
 ```sh
-git clone https://github.com/fuji-mak/Capsomnia.git
+git clone https://github.com/orut34iop/Capsomnia.git
 cd Capsomnia
 ./scripts/install.sh
 ```
@@ -131,17 +131,12 @@ Capsomnia は蓋を閉じた状態であっても蓋を開いている状態と�
 
 ## アップデート
 
-パッケージインストールの場合は、[GitHub Releases](https://github.com/fuji-mak/Capsomnia/releases/latest) から最新版のパッケージをダウンロードして実行してください。
-
-ソースインストールの場合は、既存 clone から更新できます。
+この fork はローカルで管理します。アプリ内の更新確認、更新メニュー、更新のダウンロード機能は削除されています。この fork で確認した変更をビルドしてインストールしてください。上流の配布パッケージをインストールするとローカルの変更が上書きされます。
 
 ```sh
 cd Capsomnia
-git pull
 ./scripts/install.sh
 ```
-
-インストールスクリプトは、app bundle、helper、sudoers rule、LaunchAgent を現在のバージョンで上書きします。
 
 ## アンインストール
 
