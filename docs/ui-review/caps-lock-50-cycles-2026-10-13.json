@@ -1,0 +1,51 @@
+{
+  "start_utc": "2026-10-13T11:40:32.354817+00:00",
+  "end_utc": "2026-10-13T11:42:58.560632+00:00",
+  "rounds": 50,
+  "transitions": 100,
+  "entry_point": "installed native settings master switch",
+  "log_counts": {
+    "requests_off": 50,
+    "requests_on": 50,
+    "succeeded_off": 50,
+    "succeeded_on": 50,
+    "helper_off": 50,
+    "helper_on": 50,
+    "assertion_off": 50,
+    "assertion_on": 50,
+    "failures": 0
+  },
+  "doctor": {
+    "ok": true,
+    "result": {
+      "healthy": true,
+      "helper_available": true,
+      "issues": [],
+      "launch_agent_installed": true,
+      "status": {
+        "app_path": "/Applications/Capsomnia.app",
+        "app_running": true,
+        "app_version": "4.2.4",
+        "caps_lock": true,
+        "caps_lock_physical": true,
+        "secure_input_caps_lock_override": false,
+        "sleep_disabled": true,
+        "sleep_requested": false,
+        "timer": {
+          "active": false,
+          "deadline": null,
+          "duration_seconds": 0,
+          "remaining_seconds": null,
+          "saved_minutes": 0,
+          "source": "settings"
+        }
+      }
+    }
+  },
+  "observation_duration_ms": {
+    "min": 400,
+    "max": 917,
+    "note": "CUA click plus AX observation time, not precise transition latency"
+  },
+  "coverage_limit": "Installed settings UI; original menu-bar interaction not exercised. Intermittent historical failure not reproduced; recovery covered by deterministic tests."
+}
