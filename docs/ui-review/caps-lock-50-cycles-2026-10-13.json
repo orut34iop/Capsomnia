@@ -47,5 +47,5 @@
     "max": 917,
     "note": "CUA click plus AX observation time, not precise transition latency"
   },
-  "coverage_limit": "Installed settings UI; original menu-bar interaction not exercised. Intermittent historical failure not reproduced; recovery covered by deterministic tests."
+  "coverage_limit": "Installed settings UI only. Original menu-bar interaction subsequently confirmed working by the reporter; see the reconciliation follow-up document. Historical failure not reproduced; recovery covered by deterministic tests."
 }
