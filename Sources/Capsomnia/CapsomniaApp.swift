@@ -5,6 +5,8 @@ import Foundation
 
 final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var awakeSession = AwakeSessionState()
+    private var capsLockFeedback = CapsLockFeedbackState()
+    private var capsLockNotice: CapsLockFeedbackNotice?
     private var lastLoggedKeyboardDrift: Bool?
     private var lastAppliedState: Bool?
     private var lastConfirmedSleepState: Bool?
@@ -303,6 +305,8 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
             }
             return
         }
+        if currentCapsLockState != target { capsLockNotice?.close() }
+        capsLockFeedback.recordKey(previous: currentCapsLockState, target: target)
         awakeSession.recordKey(target: target)
         suppressInputSourceRecoveryForUserAction(reason: "capslock_key")
         log("capslock_key requested target=\(target ? "on" : "off")")
@@ -313,6 +317,10 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func suppressInputSourceRecoveryForUserAction(reason: String) {
+        if reason != "capslock_key" {
+            capsLockFeedback.cancel()
+            capsLockNotice?.close()
+        }
         cancelInputSourceRecovery()
         suppressInputSourceRecoveryUntil = Date().addingTimeInterval(
             userCapsLockEventSuppressionInterval
@@ -1352,6 +1360,7 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         if lastAppliedState == capsLockOn {
             if failedSleepState == nil, now < nextSleepStateVerificationAt {
+                showCapsLockFeedback(target: capsLockOn, succeeded: true)
                 syncDisplayAwakeAssertion(
                     capsLockOn: capsLockOn,
                     sleepPreventionConfirmed: true,
@@ -1402,6 +1411,7 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func markSleepStateFailed(_ capsLockOn: Bool, at now: Date, resetVerification: Bool = true) {
+        showCapsLockFeedback(target: capsLockOn, succeeded: false)
         failedSleepState = capsLockOn
         nextSleepStateRetryAt = now.addingTimeInterval(helperRetryInterval)
         if resetVerification {
@@ -1417,6 +1427,7 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func markSleepStateConfirmed(_ capsLockOn: Bool, at now: Date, reason: String) {
+        showCapsLockFeedback(target: capsLockOn, succeeded: true)
         lastConfirmedSleepState = capsLockOn
         hasLoggedMissingSleepState = false
         failedSleepState = nil
@@ -1431,6 +1442,16 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         syncHotspotKeepAlive(capsLockOn: capsLockOn, reason: reason)
         evaluateDisplaySleepForClosedLid(capsLockOn: capsLockOn, reason: reason)
         requestSystemSleepAfterAutoOffIfReady(capsLockOn: capsLockOn, reason: reason)
+    }
+
+    private func showCapsLockFeedback(target: Bool, succeeded: Bool) {
+        guard capsLockFeedback.consume(target: target, succeeded: succeeded) else { return }
+        let unlocked = ScreenLock.isLocked() == false
+        log("capslock_key result target=\(target ? "on" : "off") confirmed=\(succeeded) notice=\(unlocked ? "shown" : "skipped_session_locked_or_unknown")")
+        capsLockNotice?.close()
+        guard unlocked else { return }
+        capsLockNotice = CapsLockFeedbackNotice(target: target, succeeded: succeeded, at: Date())
+        capsLockNotice?.present()
     }
 
     private func requestSystemSleepAfterAutoOffIfReady(capsLockOn: Bool, reason: String) {
