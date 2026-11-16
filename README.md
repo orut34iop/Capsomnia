@@ -24,9 +24,9 @@ Current version: `4.2.4`
 
 [日本語 README](README.ja.md) · [简体中文 README](README.zh-Hans.md) · [한국어 README](README.ko.md)
 
-Capsomnia is a small macOS menu bar app that turns Caps Lock into a physical keep-awake switch for closed-lid MacBook work.
+Capsomnia is a macOS menu bar app that keeps work running with the MacBook lid closed.
 
-Turn Caps Lock on when local work should keep running. Turn Caps Lock off when you want normal sleep behavior back.
+Click the Capsomnia menu bar icon and select **Keep running** to prevent sleep. Select it again to restore normal sleep behavior.
 
 It is useful for AI agents, mobile access, and other long-running or remote work.
 
@@ -92,10 +92,10 @@ This fork also adds **Lock when lid opens**, off by default, below the Computer 
 The notice shows the last observed lid closing, lid opening detection, and lock confirmation times, including the local time zone. Lock request times remain internal. Missing times in older records or after startup with a closed lid are shown as “Not recorded”. An optional system notification supplements a persistent, nonactivating notice after unlock. Dismissing the notice retains the record in Advanced Settings. Existing locks, unavailable state, failed requests, and unconfirmed requests are reported separately. The record does not certify automation throughout the preceding closed-lid interval. Locking uses a private macOS login-framework entry point that may change across OS versions; desktop automation may pause once locked.
 
 - Prevent all-caps typing (optional): when Capsomnia is on, Caps Lock no longer forces uppercase input. Shift still types uppercase letters.
-- Caps Lock on: keeps AI agents and other work from being interrupted when the MacBook lid is closed. Remote operation through tools such as Codex Mobile remains possible. The Caps Lock light physically shows the current state.
-- Custom toggle shortcut: turn Capsomnia on or off with another key combination even if Caps Lock is assigned elsewhere. The green Caps Lock light continues to show the current state.
+- With Keep running on, AI agents and other work continue when the lid is closed. Remote operation through tools such as Codex Mobile remains possible.
+- You can assign a custom toggle shortcut in Advanced Settings.
 - Auto-off timer (optional): choose a preset from 15 minutes to 8 hours or a custom duration from 1 minute to 24 hours. When time expires, Capsomnia turns off and releases sleep prevention. It immediately sleeps the Mac only if the lid is closed; an open or unknown lid state cancels the immediate sleep request.
-- Caps Lock off: restores normal sleep behavior.
+- Turn Keep running off to restore normal sleep behavior.
 - Display behavior: by default, closing the lid puts the display to sleep while work keeps running. Enable "Keep display awake" to keep the display session available after the macOS idle time or closing the lid, so remote UI operation such as Computer Use can continue. While the lid is closed in this mode, Capsomnia temporarily lowers only the built-in display to minimum brightness to reduce power use and heat, then restores the exact previous brightness when the lid opens. External displays are not changed.
 - Quitting the app restores normal sleep behavior.
 
@@ -107,14 +107,14 @@ Capsomnia is useful for long-running local jobs, AI coding agents, SSH sessions,
 - Closed-lid use while sleep prevention is active may increase heat and battery consumption.
 - Do not rely on Capsomnia for critical jobs or as a substitute for backups.
 - The auto-off timer explicitly puts the Mac to sleep when it expires with the lid closed. Save work and choose a duration long enough for the task to finish.
-- Turn Caps Lock off after use and confirm that normal sleep behavior has returned.
+- Turn Keep running off after use and confirm that normal sleep behavior has returned.
 - Use Capsomnia at your own risk. Compatibility is not guaranteed for every Mac, macOS version, or environment.
 
 ## Settings
 
 Advanced Settings includes an optional "Keep hotspot connected" switch, off by default. While Capsomnia is on, it sends one small probe per minute to a recognized hotspot gateway, including iPhone Personal Hotspot, to help prevent idle disconnections. The probes stay on the local network and may slightly increase the phone's battery use. This does not automatically reconnect a lost hotspot connection.
 
-On first launch, Capsomnia explains how the Caps Lock switch works and lets you choose:
+On first launch, Capsomnia explains how Keep running works and lets you choose:
 
 - whether to show the menu bar dot
 - whether to prevent all-caps typing while Capsomnia is on
@@ -132,7 +132,7 @@ You can open Capsomnia from `/Applications/Capsomnia.app` after package installa
 
 `caffeinate` is useful for preventing idle sleep while your Mac is open. Closing a MacBook lid is different: normal `caffeinate` assertions do not reliably keep local jobs running in closed-lid use.
 
-Capsomnia keeps work running in closed-lid use the same way it would while the lid is open. The yellow-green Caps Lock light makes that state visible.
+Capsomnia keeps work running in closed-lid use the same way it would while the lid is open. The menu bar icon makes that state visible.
 
 ## Update
 
@@ -171,7 +171,7 @@ Capsomnia's menu bar app does not run as root. System sleep settings require ele
 
 Package-installed app files, the helper, and the system LaunchAgent are owned by `root:wheel`. The packaged helper is also signed with the same Developer ID as the app. Capsomnia verifies the actual `SleepDisabled` state after every change and every ten seconds afterward. If the helper cannot apply a change, the state cannot be verified, or the setting drifts, the menu bar dot turns red and Capsomnia retries after five seconds instead of showing the requested state as active. The red error dot appears temporarily even if the menu bar icon is normally hidden.
 
-When "Prevent all-caps typing" is disabled, Capsomnia does not request Input Monitoring or inspect keyboard events. When it is enabled, a local active Core Graphics event filter uses Accessibility permission only to remove `.maskAlphaShift` and suppress the Caps Lock modifier-change event. It does not log event contents, persist them, or send them over the network. Capsomnia still reads the physical Caps Lock state every 250 milliseconds to control sleep.
+When "Prevent all-caps typing" is disabled, Capsomnia does not request Input Monitoring or inspect keyboard events. When it is enabled, a local active Core Graphics event filter uses Accessibility permission only to remove `.maskAlphaShift` and suppress the Caps Lock modifier-change event. It does not log event contents, persist them, or send them over the network.
 
 macOS may show "Taketo Fujimaki" instead of "Capsomnia" for an existing cached background-item registration. This is the LaunchAgent that starts Capsomnia at login and restarts it after crashes. Disabling it can stop automatic startup and crash recovery.
 
@@ -229,7 +229,7 @@ launchctl bootstrap "gui/$(id -u)" /Library/LaunchAgents/com.github.fuji-mak.cap
 
 For source installs, use `$HOME/Library/LaunchAgents/com.github.fuji-mak.capsomnia.plist` instead.
 
-Capsomnia's LaunchAgent restarts the app after a crash or other unsuccessful exit. On startup, Capsomnia reads the current Caps Lock state and reapplies the matching sleep setting. Normal Quit still exits cleanly and does not restart the app.
+Capsomnia's LaunchAgent restarts the app after a crash or other unsuccessful exit. On startup, Capsomnia reads the current system sleep-prevention state and reapplies the matching sleep setting. Normal Quit still exits cleanly and does not restart the app.
 
 Check the helper permissions:
 
@@ -242,7 +242,7 @@ sudo -n -l /Library/PrivilegedHelperTools/capsomnia-pmset on \
   /Library/PrivilegedHelperTools/capsomnia-pmset indicator-restore
 ```
 
-If the helper permission check fails, run `./scripts/install.sh` again. Capsomnia checks the Caps Lock state every 250 milliseconds, so the menu bar dot may update by up to roughly a quarter second after the physical LED changes.
+If the helper permission check fails, run `./scripts/install.sh` again.
 
 ## Project Status
 

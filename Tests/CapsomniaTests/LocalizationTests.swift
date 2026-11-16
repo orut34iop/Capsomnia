@@ -66,7 +66,7 @@ final class LocalizationTests: XCTestCase {
         XCTAssertEqual(AppLanguage.korean.displayName, "한국어")
         XCTAssertEqual(strings.language, "언어")
         XCTAssertEqual(strings.settingsTitle, "설정")
-        XCTAssertEqual(strings.explainerOnTitle, "Caps Lock 켜기")
-        XCTAssertEqual(strings.explainerOffTitle, "Caps Lock 끄기")
+        XCTAssertEqual(strings.explainerOnTitle, "메뉴 막대에서 계속 실행 켜기")
+        XCTAssertEqual(strings.explainerOffTitle, "계속 실행 끄기")
     }
 }

@@ -3,10 +3,10 @@ import CapsomniaControl
 @testable import Capsomnia
 
 /// Opt-in installed-app integration test. Changes only physical Caps Lock;
-/// never issues CLI off (which requests sleep). Requires an open lid and an
-/// already-active app, and restores the original hardware state on every exit.
+/// never issues CLI off (which requests sleep). Requires an open lid and a
+/// running app, and restores the original hardware state on every exit.
 final class RunningAppSessionTests: XCTestCase {
-    func testRunningSessionSurvivesAmbientKeyboardOff() throws {
+    func testCapsLockChangesPreserveConfirmedAwakeState() throws {
         try XCTSkipUnless(ProcessInfo.processInfo.environment["CAPSOMNIA_SESSION_HARDWARE_TEST"] == "1")
         try XCTSkipUnless(ClamshellStateReader.isClosed() == false, "Open lid required")
         let client = try ControlClient(bundleIdentifier: "com.github.fuji-mak.capsomnia")
@@ -18,21 +18,23 @@ final class RunningAppSessionTests: XCTestCase {
             return value
         }
         let initial = try status()
-        try XCTSkipUnless(initial["caps_lock"] == .bool(true) && initial["sleep_disabled"] == .bool(true),
-                          "Start with Keep running enabled")
+        guard case let .bool(awake)? = initial["caps_lock"] else {
+            throw XCTSkip("Start with a confirmed awake state")
+        }
+        try XCTSkipUnless(initial["sleep_disabled"] == .bool(awake), "Wait for the current transition")
         let physical = try XCTUnwrap(SystemCapsLockStateReader().currentState())
         defer { _ = SystemCapsLockController.set(physical) }
         for cycle in 1...5 {
-            XCTAssertEqual(SystemCapsLockController.set(false), .changed(to: false))
+            XCTAssertEqual(SystemCapsLockController.set(!awake), .changed(to: !awake))
             for _ in 0..<12 {
                 Thread.sleep(forTimeInterval: 0.25)
                 let value = try status()
-                guard value["caps_lock"] == .bool(true), value["sleep_disabled"] == .bool(true) else {
-                    XCTFail("Ambient keyboard OFF cancelled running session at cycle \(cycle): \(value)")
+                guard value["caps_lock"] == .bool(awake), value["sleep_disabled"] == .bool(awake) else {
+                    XCTFail("Caps Lock changed the awake state at cycle \(cycle): \(value)")
                     return
                 }
             }
-            XCTAssertEqual(SystemCapsLockController.set(true), .changed(to: true))
+            XCTAssertEqual(SystemCapsLockController.set(awake), .changed(to: awake))
         }
     }
 }
