@@ -61,7 +61,6 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var hasLoggedMissingDisplayState = false
     private var hasLoggedMissingSleepState = false
     private var dedicatedModeError = false
-    private var shouldRestoreSleepOnTerminate = true
     private var pollingTimer: Timer?
     private var pendingCapsLockOffWorkItem: DispatchWorkItem?
     private var pendingInputSourceRecoveryWorkItem: DispatchWorkItem?
@@ -115,10 +114,6 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     )
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        if terminateIfNewerInteractiveDuplicate() {
-            return
-        }
-
         restoreSavedDisplayBrightnessIfNeeded(reason: "startup")
         Preferences.registerDefaults()
         restoreSavedSecureInputCapsLockIfNeeded(reason: "startup")
@@ -127,12 +122,6 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let shouldShowInitialSetup = Preferences.consumeForceWelcomeOnNextLaunch()
             || !Preferences.didCompleteInitialSetup
 
-        DistributedNotificationCenter.default().addObserver(
-            self,
-            selector: #selector(handleOpenSettingsNotification),
-            name: openSettingsNotificationName,
-            object: appLabel
-        )
         DistributedNotificationCenter.default().addObserver(
             self,
             selector: #selector(handleSelectedKeyboardInputSourceChanged),
@@ -156,7 +145,7 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
-        showSettingsWindow(page: currentSettingsPage())
+        openSettings()
         return true
     }
 
@@ -177,40 +166,12 @@ final class Capsomnia: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
         displayAwakeAssertion.setActive(false)
         hotspotKeepAlive.setActive(false)
-        guard shouldRestoreSleepOnTerminate else { return }
-
         Preferences.secureInputCapsLockOverrideActive = false
         let result = runHelper("off")
         log("terminate restore_off helper_status=\(result.status) stdout=\(result.stdout) stderr=\(result.stderr)")
     }
 
-    private func terminateIfNewerInteractiveDuplicate() -> Bool {
-        guard ProcessInfo.processInfo.environment["XPC_SERVICE_NAME"] != appLabel else {
-            return false
-        }
-
-        let currentPID = getpid()
-        let olderInstances = NSRunningApplication
-            .runningApplications(withBundleIdentifier: appLabel)
-            .filter { !$0.isTerminated && $0.processIdentifier > 0 && $0.processIdentifier < currentPID }
-
-        guard let existing = olderInstances.min(by: { $0.processIdentifier < $1.processIdentifier }) else {
-            return false
-        }
-
-        shouldRestoreSleepOnTerminate = false
-        DistributedNotificationCenter.default().post(
-            name: openSettingsNotificationName,
-            object: appLabel,
-            userInfo: nil
-        )
-        existing.activate(options: [])
-        log("duplicate_instance existing_pid=\(existing.processIdentifier) terminate_without_restore")
-        NSApp.terminate(nil)
-        return true
-    }
-
-    @objc private func handleOpenSettingsNotification(_ notification: Notification) {
+    func openSettings() {
         showSettingsWindow(page: currentSettingsPage())
     }
 
